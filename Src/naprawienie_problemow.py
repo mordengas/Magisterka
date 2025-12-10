@@ -8,30 +8,8 @@ input_filename = 'Data/zapalenia_naczyn_z_problemami.csv'
 try:
     df = pd.read_csv(input_filename, sep='|')
 except FileNotFoundError:
-    print("Nie znaleziono pliku wejściowego. Generuję go na nowo...")
-    # (Tu następuje szybka regeneracja danych z poprzedniego kroku, aby kod był samodzielny)
-    df = pd.read_csv('Data/zapalenia_naczyn.csv', sep='|')
-    np.random.seed(42)
-    cols_miss = ['Wiek', 'Kreatynina', 'Max_CRP', 'Plec', 'Liczba_Zajetych_Narzadow', 
-                 'Czas_Pierwsze_Zaostrzenie', 'Sterydy_Dawka_mg', 'ANCA_Obecne']
-    for col in cols_miss:
-        if col in df.columns:
-            df.loc[np.random.random(len(df)) < 0.15, col] = np.nan
+    print("Nie znaleziono pliku wejściowego.")
     
-    # Outliery i Skala
-    if 'Max_CRP' in df.columns:
-        df.loc[np.random.choice(df.index, 5), 'Max_CRP'] *= 50
-    if 'Wiek' in df.columns:
-        df.loc[np.random.choice(df.index, 5), 'Wiek'] = -10
-    if 'Kreatynina' in df.columns:
-        df['Kreatynina'] *= 1000
-    if 'Czas_Pierwsze_Zaostrzenie' in df.columns:
-        df['Czas_Pierwsze_Zaostrzenie'] *= 1440
-        
-    df.to_csv(input_filename, sep='|', index=False)
-
-print(f"Przetwarzanie pliku: {input_filename}")
-
 # ==========================================
 # PLIK 1: TYLKO NORMALIZACJA (Only Normalization)
 # ==========================================

@@ -1,34 +1,68 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import cross_val_predict
-
 from sklearn.model_selection import StratifiedKFold
+import buildresultauc 
+import myclassifier
 
-from importnb import Notebook
+# Lista plików do porównania
+files_to_compare = [
+    'Data/zapalenia_tylko_usuniete_wiersze.csv',
+    'Data/zapalenia_tylko_wypelnione.csv',
+    'Data/zapalenia_tylko_znormalizowane.csv'
+]
 
-with Notebook():
-    import buildresultauc #Załaduj plik buildresultauc.ipynb tak, jakby był modułem Pythona
-    import myclassifier
+results = {}
 
-#fileName = './data/dane_med3P.csv'
-fileName = './data/dane_med6P.csv' #Nowe dane
-dataset = pd.read_csv(fileName,sep='|') #Odczytanie zbioru danych
+print(f"{'PLIK':<40} | {'AUC':<10}")
+print("-" * 55)
 
-noColumn = dataset.shape[1] #Ustalenie liczby kolumn w danych
-print("Liczba kolumn=",noColumn)
+for fileName in files_to_compare:
+    try:
+        # Odczytanie zbioru danych
+        dataset = pd.read_csv(fileName, sep='|') 
 
-features = dataset.iloc[:, 1:noColumn - 1]  # Wyodrębnienie części warunkowej danych
-labels = dataset.iloc[:, [noColumn - 1]]  # Wyodrębnienie kolumny decyzyjnej
-labels = np.ravel(labels);
+        # Znajdujemy nazwę ostatniej kolumny (kolumna decyzyjna)
+        last_col_name = dataset.columns[-1]
+        
+        # Usuwamy wiersze, gdzie w kolumnie decyzyjnej jest NaN (pusto)
+        # To eliminuje błąd "invalid value encountered in cast"
+        dataset = dataset.dropna(subset=[last_col_name])
+        
+        noColumn = dataset.shape[1]
+        
+        # Wyodrębnienie cech (odrzucamy pierwszą kolumnę 'Kod' i ostatnią 'Klasa')
+        features = dataset.iloc[:, 1:noColumn - 1]
+        
+        # Wyodrębnienie kolumny decyzyjnej
+        labels = dataset.iloc[:, [noColumn - 1]]
+        labels = np.ravel(labels)
+        
+        # WAŻNE: Zamiana na int, aby uniknąć problemu 1.0 != "1"
+        # Jeśli w pliku CSV są braki w kolumnie decyzyjnej, trzeba je najpierw usunąć
+        if np.issubdtype(labels.dtype, np.floating):
+             labels = labels.astype(int)
 
-model = myclassifier.MyClassifier()
+        # Inicjalizacja klasyfikatora
+        model = myclassifier.MyClassifier()
 
-skf = StratifiedKFold(n_splits=10, shuffle=True,random_state=1234)
+        # Walidacja krzyżowa
+        skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=1234)
+        labels_predicted_prob = cross_val_predict(model, features, labels, n_jobs=-1, cv=skf, method='predict_proba')
 
-labels_predicted_prob = cross_val_predict(model, features, labels, n_jobs=1, cv=skf, method='predict_proba')
+        # Obliczenie AUC
+        buildResults = buildresultauc.BuildResults()
+        auc = buildResults.getResultAUC(labels_predicted_prob, labels)
+        
+        results[fileName] = auc
+        print(f"{fileName:<40} | {auc:.4f}")
 
-buildResults = buildresultauc.BuildResults()
+    except Exception as e:
+        print(f"{fileName:<40} | BŁĄD: {e}")
 
-auc = buildResults.getResultAUC(labels_predicted_prob,labels)
+print("-" * 55)
 
-print(auc)
+# Znalezienie najlepszego wyniku
+if results:
+    best_file = max(results, key=results.get)
+    print(f"\nNajlepszy wynik (AUC={results[best_file]:.4f}) uzyskano dla pliku:\n-> {best_file}")
