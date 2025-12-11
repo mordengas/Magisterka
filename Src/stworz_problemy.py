@@ -5,10 +5,18 @@ import numpy as np
 df = pd.read_csv('Data/zapalenia_naczyn.csv', sep='|')
 np.random.seed(42) # Dla powtarzalności
 
-# --- PROBLEM 1: LOSOWE BRAKI DANYCH (Globalnie ~5%) ---
-# Tworzymy maskę dla całego DataFrame
+# --- PROBLEM 1: LOSOWE BRAKI DANYCH (Globalnie ~5%, bez kolumny decyzyjnej) ---
+
 procent_brakow = 0.05
+
+# 1. Generujemy losową maskę dla całego DataFrame
 maska_losowa = np.random.random(df.shape) < procent_brakow
+
+# 2. KLUCZOWA POPRAWKA: Ustawiamy ostatnią kolumnę maski na False
+#    Indeks -1 oznacza ostatnią kolumnę. Dzięki temu nigdy nie wstawimy tam braku.
+maska_losowa[:, -1] = False
+
+# 3. Wstawiamy NaN tam, gdzie maska jest True
 df[maska_losowa] = np.nan
 
 # --- PROBLEM 2: OUTLIERY I BŁĘDY LOGICZNE ---

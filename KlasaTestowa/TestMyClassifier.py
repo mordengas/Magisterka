@@ -7,9 +7,13 @@ import myclassifier
 
 # Lista plików do porównania
 files_to_compare = [
-    'Data/zapalenia_tylko_usuniete_wiersze.csv',
-    'Data/zapalenia_tylko_wypelnione.csv',
-    'Data/zapalenia_tylko_znormalizowane.csv'
+    'Data/zapalenia_1_norm.csv',
+    'Data/zapalenia_2_fill.csv',
+    'Data/zapalenia_3_remove.csv',
+    'Data/zapalenia_4_remove_fill.csv',
+    'Data/zapalenia_5_remove_norm.csv',
+    'Data/zapalenia_6_fill_norm.csv',
+    'Data/zapalenia_7_all.csv'
 ]
 
 results = {}

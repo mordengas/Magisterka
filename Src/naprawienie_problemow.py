@@ -1,96 +1,127 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
 
-# --- KROK 0: Upewnienie się, że mamy plik z problemami ---
+# Konfiguracja
 input_filename = 'Data/zapalenia_naczyn_z_problemami.csv'
 
 try:
-    df = pd.read_csv(input_filename, sep='|')
+    df_raw = pd.read_csv(input_filename, sep='|')
+    print(f"Wczytano plik: {input_filename} (Wierszy: {len(df_raw)})")
 except FileNotFoundError:
-    print("Nie znaleziono pliku wejściowego.")
+    print("BŁĄD: Nie znaleziono pliku wejściowego!")
+    exit()
+
+# ==========================================
+# DEFINICJE FUNKCJI CZYSZCZĄCYCH
+# ==========================================
+
+def apply_normalization(df_input):
+    """Metoda 1: Normalizacja MinMax (0-1) wybranych kolumn."""
+    df = df_input.copy()
+    cols_to_normalize = ['Kreatynina', 'Czas_Pierwsze_Zaostrzenie', 'Wiek', 'Max_CRP']
     
-# ==========================================
-# PLIK 1: TYLKO NORMALIZACJA (Only Normalization)
-# ==========================================
-# Naprawiamy tylko skalę (Kreatynina, Czas), ale zostawiamy puste miejsca i outliery.
-df_norm = df.copy()
+    for col in cols_to_normalize:
+        if col in df.columns:
+            min_val = df[col].min()
+            max_val = df[col].max()
+            # Unikamy dzielenia przez zero
+            if max_val != min_val:
+                df[col] = (df[col] - min_val) / (max_val - min_val)
+    return df
 
-cols_to_normalize = ['Kreatynina', 'Czas_Pierwsze_Zaostrzenie', 'Wiek', 'Max_CRP']
-scaler = MinMaxScaler()
+def apply_imputation(df_input):
+    """Metoda 2: Wypełnianie braków (Mean dla liczb, Mode dla reszty)."""
+    df = df_input.copy()
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    non_numeric_cols = df.select_dtypes(exclude=[np.number]).columns
 
-# Uwaga: Scikit-learn scaler nie zadziała z NaN bez błędów w starszych wersjach, 
-# więc używamy normalizacji ręcznej w Pandas, która ignoruje NaN (zostawia je jako NaN).
-for col in cols_to_normalize:
-    if col in df_norm.columns:
-        min_val = df_norm[col].min()
-        max_val = df_norm[col].max()
-        # Wzór MinMax: (x - min) / (max - min)
-        df_norm[col] = (df_norm[col] - min_val) / (max_val - min_val)
+    # Numeryczne -> średnia
+    for col in numeric_cols:
+        if df[col].isnull().any():
+            df[col] = df[col].fillna(df[col].mean())
 
-df_norm.to_csv('Data/zapalenia_tylko_znormalizowane.csv', sep='|', index=False)
-print("1. Utworzono 'zapalenia_tylko_znormalizowane.csv' (Skala 0-1, ale braki pozostały).")
+    # Tekstowe -> moda
+    for col in non_numeric_cols:
+        if df[col].isnull().any() and not df[col].mode().empty:
+            df[col] = df[col].fillna(df[col].mode()[0])
+            
+    return df
 
-
-# ==========================================
-# PLIK 2: TYLKO WYPEŁNIANIE BRAKÓW (Only Imputation)
-# ==========================================
-# Naprawiamy tylko puste miejsca (NaN), ale zostawiamy złą skalę i outliery.
-df_filled = df.copy()
-
-numeric_cols = df_filled.select_dtypes(include=[np.number]).columns
-non_numeric_cols = df_filled.select_dtypes(exclude=[np.number]).columns
-
-# Numeryczne -> średnia
-for col in numeric_cols:
-    df_filled[col] = df_filled[col].fillna(df_filled[col].mean())
-
-# Tekstowe/Kategoryczne -> moda (najczęstsza wartość)
-for col in non_numeric_cols:
-    if not df_filled[col].mode().empty:
-        df_filled[col] = df_filled[col].fillna(df_filled[col].mode()[0])
-
-df_filled.to_csv('Data/zapalenia_tylko_wypelnione.csv', sep='|', index=False)
-print("2. Utworzono 'zapalenia_tylko_wypelnione.csv' (Brak pustych miejsc, ale skala i outliery zostały).")
-
-
-# ==========================================
-# PLIK 3: TYLKO USUWANIE WIERSZY (Only Row Removal)
-# ==========================================
-# Usuwamy wiersze, które zawierają zidentyfikowane problemy (Outliery logiczne).
-# Interpretuję to jako usunięcie błędnych rekordów (Outlierów), a nie wszystkich z NaN 
-# (bo usunęlibyśmy prawie wszystko).
-df_rows = df.copy()
-initial_len = len(df_rows)
-
-# Logika: (Wiek jest OK) LUB (Wiek jest Pusty)
-if 'Wiek' in df_rows.columns:
-    warunek_sensowny_wiek = (df_rows['Wiek'] > 0)
-    warunek_jest_pusty = df_rows['Wiek'].isnull()
+def apply_removal(df_input):
+    """Metoda 3: Usuwanie wierszy z błędami logicznymi (Outliery)."""
+    df = df_input.copy()
     
-    # Zostawiamy wiersze spełniające jeden z tych warunków
-    df_rows = df_rows[warunek_sensowny_wiek | warunek_jest_pusty]
+    # 1. Wiek (musi być > 0 lub pusty)
+    if 'Wiek' in df.columns:
+        warunek_sensowny_wiek = (df['Wiek'] > 0)
+        warunek_jest_pusty = df['Wiek'].isnull()
+        df = df[warunek_sensowny_wiek | warunek_jest_pusty]
 
-# 2. Naprawa CRP: Usuwamy tylko ekstremalne piki
-if 'Max_CRP' in df_rows.columns:
-    # Obliczamy próg odcięcia (np. 98 centyl), ignorując NaN w obliczeniach
-    limit = df_rows['Max_CRP'].quantile(0.98)
+    # 2. Max_CRP (usuwamy ekstremalne piki powyżej 98 centyla)
+    if 'Max_CRP' in df.columns:
+        limit = df['Max_CRP'].quantile(0.98)
+        warunek_normalne_crp = df['Max_CRP'] < limit
+        warunek_puste_crp = df['Max_CRP'].isnull()
+        df = df[warunek_normalne_crp | warunek_puste_crp]
+
+    # 3. Sterydy (usuwamy oczywiste błędy > 10000)
+    if 'Sterydy_Dawka_mg' in df.columns:
+        warunek_dawka_ok = df['Sterydy_Dawka_mg'] < 10000
+        warunek_brak_dawki = df['Sterydy_Dawka_mg'].isnull()
+        df = df[warunek_dawka_ok | warunek_brak_dawki]
+        
+    return df
+
+# ==========================================
+# GENEROWANIE 7 PLIKÓW
+# ==========================================
+datasets = {}
+
+# --- A. POJEDYNCZE METODY ---
+# 1. Tylko Normalizacja
+datasets['zapalenia_1_norm.csv'] = apply_normalization(df_raw)
+
+# 2. Tylko Wypełnianie
+datasets['zapalenia_2_fill.csv'] = apply_imputation(df_raw)
+
+# 3. Tylko Usuwanie
+datasets['zapalenia_3_remove.csv'] = apply_removal(df_raw)
+
+# --- B. PARY METOD (Kombinacje) ---
+# Ważna kolejność: Najpierw usuwamy śmieci, potem wypełniamy/normalizujemy
+
+# 4. Usuwanie + Wypełnianie (Najpierw wyrzucamy błędy, potem uzupełniamy braki średnią z czystych danych)
+df_remove = apply_removal(df_raw)
+datasets['zapalenia_4_remove_fill.csv'] = apply_imputation(df_remove)
+
+# 5. Usuwanie + Normalizacja (Najpierw wyrzucamy błędy, żeby nie psuły skali MinMax)
+df_remove = apply_removal(df_raw) # Ponownie, dla jasności
+datasets['zapalenia_5_remove_norm.csv'] = apply_normalization(df_remove)
+
+# 6. Wypełnianie + Normalizacja (Bez usuwania - wypełniamy "brudną" średnią, potem skalujemy)
+df_fill = apply_imputation(df_raw)
+datasets['zapalenia_6_fill_norm.csv'] = apply_normalization(df_fill)
+
+# --- C. WSZYSTKIE METODY ---
+# 7. Usuwanie -> Wypełnianie -> Normalizacja (Pełny proces)
+df_full = apply_removal(df_raw)      # Krok 1: Wyrzuć śmieci
+df_full = apply_imputation(df_full)  # Krok 2: Uzupełnij luki
+datasets['zapalenia_7_all.csv'] = apply_normalization(df_full) # Krok 3: Znormalizuj
+
+# ==========================================
+# ZAPIS I RAPORT
+# ==========================================
+print("-" * 60)
+print(f"{'NAZWA PLIKU':<35} | {'WIERSZY':<8} | {'NAN (Suma)':<10}")
+print("-" * 60)
+
+for filename, data in datasets.items():
+    full_path = f'Data/{filename}'
+    data.to_csv(full_path, sep='|', index=False)
     
-    warunek_normalne_crp = df_rows['Max_CRP'] < limit
-    warunek_puste_crp = df_rows['Max_CRP'].isnull()
-    
-    df_rows = df_rows[warunek_normalne_crp | warunek_puste_crp]
+    nans = data.isnull().sum().sum()
+    rows = len(data)
+    print(f"{filename:<35} | {rows:<8} | {nans:<10}")
 
-# 3. Naprawa Sterydów: Usuwamy tylko te błędne 50000
-if 'Sterydy_Dawka_mg' in df_rows.columns:
-    warunek_dawka_ok = df_rows['Sterydy_Dawka_mg'] < 10000
-    warunek_brak_dawki = df_rows['Sterydy_Dawka_mg'].isnull()
-    
-    df_rows = df_rows[warunek_dawka_ok | warunek_brak_dawki]
-
-# Zapis i raport
-df_rows.to_csv('Data/zapalenia_tylko_usuniete_wiersze.csv', sep='|', index=False)
-
-print(f"Wierszy po czyszczeniu: {len(df_rows)}")
-print(f"Usunięto: {len(df) - len(df_rows)} wierszy (tylko te z błędnymi danymi).")
-print("Plik zapisany jako: zapalenia_tylko_usuniete_wiersze.csv")
+print("-" * 60)
+print("Zakończono generowanie 7 plików.")
