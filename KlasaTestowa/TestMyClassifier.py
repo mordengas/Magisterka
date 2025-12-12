@@ -7,6 +7,8 @@ import myclassifier
 
 # Lista plików do porównania
 files_to_compare = [
+    'Data/zapalenia_naczyn.csv',
+    'Data/zapalenia_naczyn_z_problemami.csv',
     'Data/zapalenia_1_norm.csv',
     'Data/zapalenia_2_fill.csv',
     'Data/zapalenia_3_remove.csv',

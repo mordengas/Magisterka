@@ -16,17 +16,47 @@ except FileNotFoundError:
 # ==========================================
 
 def apply_normalization(df_input):
-    """Metoda 1: Normalizacja MinMax (0-1) wybranych kolumn."""
+    """
+    Metoda 1: Normalizacja MinMax (0-1).
+    Automatycznie wykrywa kolumny numeryczne, które nie są binarne (0/1) i nie są decyzją.
+    """
     df = df_input.copy()
-    cols_to_normalize = ['Kreatynina', 'Czas_Pierwsze_Zaostrzenie', 'Wiek', 'Max_CRP']
     
+    # 1. Pobieramy nazwy wszystkich kolumn numerycznych
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    
+    # 2. Ustalamy nazwę kolumny decyzyjnej (zakładamy, że jest ostatnia), 
+    #    aby przypadkiem jej nie znormalizować (choć zazwyczaj jest 0/1)
+    decision_col = df.columns[-1]
+    
+    cols_to_normalize = []
+    
+    for col in numeric_cols:
+        # Pomijamy kolumnę decyzyjną
+        if col == decision_col:
+            continue
+        
+        # Sprawdzamy, czy kolumna jest binarna (np. Płeć, Zgon, Objawy 0/1)
+        # Ignorujemy NaN przy sprawdzaniu liczby unikalnych wartości
+        unique_vals = df[col].dropna().unique()
+        
+        # Kryterium: Jeżeli kolumna ma więcej niż 2 unikalne wartości, 
+        # uznajemy ją za cechę ciągłą/wielowartościową wymagającą normalizacji.
+        if len(unique_vals) > 2:
+            cols_to_normalize.append(col)
+    
+    # Opcjonalnie: wypisz co będzie normalizowane, aby mieć kontrolę
+    print(f"Kolumny wybrane do normalizacji: {cols_to_normalize}")
+    
+    # 3. Wykonujemy normalizację MinMax tylko na wybranych kolumnach
     for col in cols_to_normalize:
-        if col in df.columns:
-            min_val = df[col].min()
-            max_val = df[col].max()
-            # Unikamy dzielenia przez zero
-            if max_val != min_val:
-                df[col] = (df[col] - min_val) / (max_val - min_val)
+        min_val = df[col].min()
+        max_val = df[col].max()
+        
+        # Unikamy dzielenia przez zero (zabezpieczenie dla kolumn o stałej wartości)
+        if max_val != min_val:
+            df[col] = (df[col] - min_val) / (max_val - min_val)
+            
     return df
 
 def apply_imputation(df_input):
