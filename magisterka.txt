@@ -1,0 +1,42 @@
+MAGISTERKA
+
+Zaproponować problem z danymi (mam puste miejsca, odstające przypadki)
+
+Mam 3 na kartce z tematem.
+usuwanie wartości odstających, uzupełnianie braków danych, normalizacja atrybutów
+
+Walidacja potrzebna bo eksperyment: train and test ponad 1000 
+Cross validation 500-1000
+Leave one out 100
+
+Napisać do Bazana o prace odnośnie odstających miejsc oraz klasa do testowania kompatybilna z scikitleasn do walidacji. (Napisane)
+
+Przykłady modeli uczenia dla danych tabelarycznych: 
+-Random forest
+-xg boost
+-knn bez sensu
+-svm zbyt skomplikowany
+
+Random forest na początek. Na przykładowym zbiorze danych.
+
+Choroba naczyń - dane najistotniejsze
+
+Znasz dobre biblioteki do czyszczenia danych.
+2 metody normalizacji. Odchylenie standardowe, i z score
+
+3 pary problemów , 3 pojedyncze sposoby, i 3 na raz sposoby czyszczenia.
+
+Parametryzacja zwiększanie % pustych miejsc lub wartości odstających.
+
+Spróbować ograniczyć liczbę eksperymentów.
+Jakos zredukować liczbę wyników.
+
+Random forest, xg boost niewrażliwe na normalizacje.
+Svm wrażliwe na normalizacje.
+
+Prezentacja:
+-opis danych
+-o metodach czyszczenia
+Metodach klasyfikacji wyniki
+
+Mail o listę klasyfikatorów (3 max)

@@ -92,6 +92,33 @@ results = []
 print(f"{'PLIK':<30} | {'RF':<8} | {'SVM':<8} | {'XGB':<8}")
 print("-" * 65)
 
+# 1. TEST PLIKU PIERWOTNEGO (Baseline)
+original_file = 'Data/zapalenia_naczyn.csv'
+if os.path.exists(original_file):
+    try:
+        df = pd.read_csv(original_file, sep='|')
+        last_col = df.columns[-1]
+        df = df.dropna(subset=[last_col])
+        y = df.iloc[:, -1].astype(int)
+        X = df.iloc[:, 1:-1]
+        X = pd.get_dummies(X)
+        X_clean = SimpleImputer(strategy='constant', fill_value=-999).fit_transform(X)
+        
+        row = {'Plik': 'ORYGINALNY (Czysty)'}
+        for m_type in modele:
+            clf = myclassifier.MyClassifier(model_type=m_type)
+            skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1234)
+            probs = cross_val_predict(clf, X_clean, y, cv=skf, method='predict_proba')
+            auc_tool = buildresultauc.BuildResults()
+            auc = auc_tool.getResultAUC(probs, y)
+            row[m_type] = round(auc, 4)
+        
+        results.append(row)
+        print(f"{row['Plik']:<30} | {row['RF']:.4f} | {row['SVM']:.4f} | {row['XGBoost'] if 'XGBoost' in row else row['XGBoost']:.4f}")
+    except Exception as e:
+        print(f"BŁĄD w pliku oryginalnym: {e}")
+
+# 2. TEST PLIKÓW Z PROBLEMAMI
 for p in procenty:
     for m_name in metody:
         fileName = f'Data/zapalenia_prob_{p}{m_name}.csv'
@@ -100,30 +127,22 @@ for p in procenty:
             
         try:
             df = pd.read_csv(fileName, sep='|')
-            
-            # 1. Przygotowanie danych (usuwamy puste etykiety)
             last_col = df.columns[-1]
             df = df.dropna(subset=[last_col])
             
             y = df.iloc[:, -1].astype(int)
-            X = df.iloc[:, 1:-1] # Pomijamy Kod i Zgon
+            X = df.iloc[:, 1:-1]
             X = pd.get_dummies(X)
-            
-            # 2. Imputacja techniczna (konieczna dla SVM i RF przy brakach)
+
             imputer = SimpleImputer(strategy='constant', fill_value=-999)
             X_clean = imputer.fit_transform(X)
             
             row = {'Plik': f"p{p}{m_name if m_name else '_raw'}"}
             
             for m_type in modele:
-                # Ważne: Tworzymy nowy obiekt klasyfikatora dla każdego modelu
                 clf = myclassifier.MyClassifier(model_type=m_type)
                 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1234)
-                
-                # Generowanie prawdopodobieństw przez walidację krzyżową
                 probs = cross_val_predict(clf, X_clean, y, cv=skf, method='predict_proba')
-                
-                # Obliczanie AUC
                 auc_tool = buildresultauc.BuildResults()
                 auc = auc_tool.getResultAUC(probs, y)
                 row[m_type] = round(auc, 4)
@@ -138,4 +157,4 @@ for p in procenty:
 if results:
     df_res = pd.DataFrame(results)
     df_res.to_csv('wyniki_koncowe.csv', index=False)
-    print("\nGotowe! Wyniki zapisano w: wyniki_koncowe.csv")
+    print("\nGotowe! Wyniki (w tym plik oryginalny) zapisano w: wyniki_koncowe.csv")

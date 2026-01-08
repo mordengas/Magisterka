@@ -108,33 +108,58 @@ import pandas as pd
 import numpy as np
 import os
 
-# Utworzenie folderu Data jeśli nie istnieje
+# Tworzymy folder na dane jeśli nie istnieje
 if not os.path.exists('Data'):
     os.makedirs('Data')
 
-def generuj_zbiór_z_problemami(input_path, output_name, procent_brakow):
-    df = pd.read_csv(input_path, sep='|')
-    np.random.seed(42)
-    
-    # 1. Losowe braki danych
-    maska_losowa = np.random.random(df.shape) < procent_brakow
-    maska_losowa[:, -1] = False  # Nie ruszamy kolumny decyzyjnej
-    maska_losowa[:, 0] = False   # Nie ruszamy Kodu
-    df[maska_losowa] = np.nan
+def generuj_problemy(sciezka_in, nazwa_out, proc_brakow):
+    try:
+        # 1. Wczytanie danych
+        if os.path.exists(sciezka_in):
+            df = pd.read_csv(sciezka_in, sep='|')
+        else:
+            df = pd.read_csv('zapalenia_naczyn.csv', sep='|')
+            
+        np.random.seed(42)
+        
+        # --- PROBLEM 1: BRAKI DANYCH (NaN) ---
+        # Procent przekazany w parametrze (15%, 25%, 50%)
+        mask = np.random.random(df.shape) < proc_brakow
+        mask[:, -1] = False # Zabezpieczamy kolumnę decyzyjną
+        mask[:, 0] = False  # Zabezpieczamy Kod
+        df[mask] = np.nan
+        
+        # --- PROBLEM 2: OUTLIERY (5% błędnych rekordów) ---
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        for col in numeric_cols:
+            if col == df.columns[-1] or col == 'Kod' or col == 'Wiek': continue
+            # Wybieramy 5% niepustych komórek i robimy z nich ogromne wartości
+            non_nan_idx = df[df[col].notna()].index
+            if len(non_nan_idx) > 0:
+                idx_out = np.random.choice(non_nan_idx, max(1, int(len(non_nan_idx) * 0.05)), replace=False)
+                df.loc[idx_out, col] *= 50
+        
+        # --- NOWOŚĆ: PROBLEM 3: CAŁKOWITA ZMIANA SKALI KOLUMN (Problemy normalizacji) ---
+        # Wybieramy konkretne kolumny i drastycznie zmieniamy ich skalę (symulacja różnych jednostek)
+        if 'Kreatynina' in df.columns:
+            df['Kreatynina'] = df['Kreatynina'] * 1000 # Skala x1000
+            
+        if 'Max_CRP' in df.columns:
+            df['Max_CRP'] = df['Max_CRP'] / 100 # Skala /100
+            
+        if 'Wiek' in df.columns:
+            # Tutaj wprowadzamy błędy typu "data urodzenia zamiast wieku" lub inne skrajności
+            idx_logic = df[df['Wiek'].notna()].sample(frac=0.05).index
+            df.loc[idx_logic, 'Wiek'] = 150000 # Błąd typu "wiek w dniach"
+            
+        # 4. Zapisanie pliku
+        df.to_csv(f'Data/{nazwa_out}', sep='|', index=False)
+        print(f"Sukces: Utworzono Data/{nazwa_out} (Braki: {int(proc_brakow*100)}%, Wprowadzono błędy skali)")
 
-    # 2. Outliery (5% komórek w kolumnach liczbowych)
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
-    for col in numeric_cols:
-        if col == df.columns[-1] or col == 'Wiek': continue
-        non_nan_idx = df[df[col].notna()].index
-        if len(non_nan_idx) > 0:
-            idx_out = np.random.choice(non_nan_idx, max(1, int(len(non_nan_idx) * 0.05)), replace=False)
-            df.loc[idx_out, col] = df.loc[idx_out, col] * 50
+    except Exception as e:
+        print(f"Błąd przy tworzeniu {nazwa_out}: {e}")
 
-    df.to_csv(f'Data/{output_name}', sep='|', index=False)
-    print(f"Utworzono: Data/{output_name} ({int(procent_brakow*100)}% braków)")
-
-# Generowanie dla 15%, 25% i 50%
+# Generujemy 3 bazy bazowe z różnym natężeniem braków
 procenty = [0.15, 0.25, 0.50]
 for p in procenty:
-    generuj_zbiór_z_problemami('Data/zapalenia_naczyn.csv', f'zapalenia_prob_{int(p*100)}.csv', p)
+    generuj_problemy('Data/zapalenia_naczyn.csv', f'zapalenia_prob_{int(p*100)}.csv', p)
