@@ -1,4 +1,4 @@
-import numpy as np
+'''import numpy as np
 import pandas as pd
 from sklearn.model_selection import cross_val_predict
 from sklearn.model_selection import StratifiedKFold
@@ -72,3 +72,70 @@ print("-" * 55)
 if results:
     best_file = max(results, key=results.get)
     print(f"\nNajlepszy wynik (AUC={results[best_file]:.4f}) uzyskano dla pliku:\n-> {best_file}")
+'''
+
+import pandas as pd
+import numpy as np
+import os
+from sklearn.model_selection import cross_val_predict, StratifiedKFold
+from sklearn.impute import SimpleImputer
+import myclassifier
+import buildresultauc
+
+# Konfiguracja testów
+procenty = [15, 25, 50]
+metody = ['', '_1_norm', '_2_fill', '_3_remove', '_4_remove_fill', '_5_remove_norm', '_6_fill_norm', '_7_all']
+modele = ['RF', 'SVM', 'XGBoost']
+
+results = []
+
+print(f"{'PLIK':<30} | {'RF':<8} | {'SVM':<8} | {'XGB':<8}")
+print("-" * 65)
+
+for p in procenty:
+    for m_name in metody:
+        fileName = f'Data/zapalenia_prob_{p}{m_name}.csv'
+        if not os.path.exists(fileName):
+            continue
+            
+        try:
+            df = pd.read_csv(fileName, sep='|')
+            
+            # 1. Przygotowanie danych (usuwamy puste etykiety)
+            last_col = df.columns[-1]
+            df = df.dropna(subset=[last_col])
+            
+            y = df.iloc[:, -1].astype(int)
+            X = df.iloc[:, 1:-1] # Pomijamy Kod i Zgon
+            X = pd.get_dummies(X)
+            
+            # 2. Imputacja techniczna (konieczna dla SVM i RF przy brakach)
+            imputer = SimpleImputer(strategy='constant', fill_value=-999)
+            X_clean = imputer.fit_transform(X)
+            
+            row = {'Plik': f"p{p}{m_name if m_name else '_raw'}"}
+            
+            for m_type in modele:
+                # Ważne: Tworzymy nowy obiekt klasyfikatora dla każdego modelu
+                clf = myclassifier.MyClassifier(model_type=m_type)
+                skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1234)
+                
+                # Generowanie prawdopodobieństw przez walidację krzyżową
+                probs = cross_val_predict(clf, X_clean, y, cv=skf, method='predict_proba')
+                
+                # Obliczanie AUC
+                auc_tool = buildresultauc.BuildResults()
+                auc = auc_tool.getResultAUC(probs, y)
+                row[m_type] = round(auc, 4)
+            
+            results.append(row)
+            print(f"{row['Plik']:<30} | {row['RF']:.4f} | {row['SVM']:.4f} | {row['XGBoost'] if 'XGBoost' in row else row['XGBoost']:.4f}")
+            
+        except Exception as e:
+            print(f"BŁĄD w pliku {fileName}: {str(e)[:100]}")
+
+# Zapis do CSV
+if results:
+    df_res = pd.DataFrame(results)
+    df_res.to_csv('wyniki_koncowe.csv', index=False)
+    print("\nGotowe! Wyniki zapisano w: wyniki_koncowe.csv")

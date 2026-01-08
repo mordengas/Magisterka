@@ -1,3 +1,4 @@
+'''
 import pandas as pd
 import numpy as np
 
@@ -101,3 +102,39 @@ print(f"Liczba wstawionych pustych komórek (NaN): {df.isnull().sum().sum()}")
 if 'Wiek' in df.columns:
     print(f"Przykładowe wartości wieku (w tym błędy): {df.loc[idx_wiek, 'Wiek'].values}")
 print("-" * 30)
+'''
+
+import pandas as pd
+import numpy as np
+import os
+
+# Utworzenie folderu Data jeśli nie istnieje
+if not os.path.exists('Data'):
+    os.makedirs('Data')
+
+def generuj_zbiór_z_problemami(input_path, output_name, procent_brakow):
+    df = pd.read_csv(input_path, sep='|')
+    np.random.seed(42)
+    
+    # 1. Losowe braki danych
+    maska_losowa = np.random.random(df.shape) < procent_brakow
+    maska_losowa[:, -1] = False  # Nie ruszamy kolumny decyzyjnej
+    maska_losowa[:, 0] = False   # Nie ruszamy Kodu
+    df[maska_losowa] = np.nan
+
+    # 2. Outliery (5% komórek w kolumnach liczbowych)
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    for col in numeric_cols:
+        if col == df.columns[-1] or col == 'Wiek': continue
+        non_nan_idx = df[df[col].notna()].index
+        if len(non_nan_idx) > 0:
+            idx_out = np.random.choice(non_nan_idx, max(1, int(len(non_nan_idx) * 0.05)), replace=False)
+            df.loc[idx_out, col] = df.loc[idx_out, col] * 50
+
+    df.to_csv(f'Data/{output_name}', sep='|', index=False)
+    print(f"Utworzono: Data/{output_name} ({int(procent_brakow*100)}% braków)")
+
+# Generowanie dla 15%, 25% i 50%
+procenty = [0.15, 0.25, 0.50]
+for p in procenty:
+    generuj_zbiór_z_problemami('Data/zapalenia_naczyn.csv', f'zapalenia_prob_{int(p*100)}.csv', p)

@@ -1,4 +1,4 @@
-import pandas as pd
+'''import pandas as pd
 import numpy as np
 
 # Konfiguracja
@@ -155,3 +155,52 @@ for filename, data in datasets.items():
 
 print("-" * 60)
 print("Zakończono generowanie 7 plików.")
+'''
+
+import pandas as pd
+import numpy as np
+import os
+
+def apply_normalization(df):
+    df = df.copy()
+    for col in df.select_dtypes(include=[np.number]).columns:
+        if col != df.columns[-1] and df[col].nunique() > 2:
+            val_min, val_max = df[col].min(), df[col].max()
+            if val_max != val_min:
+                df[col] = (df[col] - val_min) / (val_max - val_min)
+    return df
+
+def apply_imputation(df):
+    df = df.copy()
+    for col in df.select_dtypes(include=[np.number]).columns:
+        df[col] = df[col].fillna(df[col].median())
+    return df
+
+def apply_removal(df):
+    df = df.copy()
+    for col in df.select_dtypes(include=[np.number]).columns:
+        if col == df.columns[-1]: continue
+        q1, q3 = df[col].quantile(0.05), df[col].quantile(0.95)
+        iqr = q3 - q1
+        df.loc[(df[col] < q1 - 3*iqr) | (df[col] > q3 + 3*iqr), col] = np.nan
+    return df
+
+# Procesowanie wszystkich plików bazowych
+base_files = ['zapalenia_prob_15.csv', 'zapalenia_prob_25.csv', 'zapalenia_prob_50.csv']
+
+for bf in base_files:
+    path = f'Data/{bf}'
+    if not os.path.exists(path): continue
+    df_raw = pd.read_csv(path, sep='|')
+    prefix = bf.replace('.csv', '')
+
+    # Generowanie 7 metod naprawczych
+    apply_normalization(df_raw).to_csv(f'Data/{prefix}_1_norm.csv', sep='|', index=False)
+    apply_imputation(df_raw).to_csv(f'Data/{prefix}_2_fill.csv', sep='|', index=False)
+    df_rem = apply_removal(df_raw)
+    df_rem.to_csv(f'Data/{prefix}_3_remove.csv', sep='|', index=False)
+    apply_imputation(df_rem).to_csv(f'Data/{prefix}_4_remove_fill.csv', sep='|', index=False)
+    apply_normalization(df_rem).to_csv(f'Data/{prefix}_5_remove_norm.csv', sep='|', index=False)
+    apply_normalization(apply_imputation(df_raw)).to_csv(f'Data/{prefix}_6_fill_norm.csv', sep='|', index=False)
+    apply_normalization(apply_imputation(df_rem)).to_csv(f'Data/{prefix}_7_all.csv', sep='|', index=False)
+    print(f"Naprawiono warianty dla: {bf}")

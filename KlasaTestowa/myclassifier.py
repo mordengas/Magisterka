@@ -1,4 +1,4 @@
-import numpy as np
+'''import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.base import BaseEstimator, ClassifierMixin
 
@@ -70,3 +70,36 @@ class MyClassifier(BaseEstimator, ClassifierMixin):
     def predict(self, X):
         print("Nie zaimplementowane")
         exit()
+'''
+
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
+from sklearn.base import BaseEstimator, ClassifierMixin
+
+class MyClassifier(BaseEstimator, ClassifierMixin):
+    def __init__(self, model_type='RF'):
+        self.model_type = model_type
+        self.model = None
+        self.classes_ = None
+
+    def fit(self, features_train, labels_train):
+        self.classes_ = np.sort(np.unique(labels_train))
+        
+        if self.model_type == 'RF':
+            self.model = RandomForestClassifier(n_estimators=100, random_state=1234)
+        elif self.model_type == 'SVM':
+            self.model = SVC(probability=True, kernel='rbf', random_state=1234)
+        elif self.model_type == 'XGBoost':
+            self.model = GradientBoostingClassifier(n_estimators=100, random_state=1234)
+            
+        self.model.fit(features_train, np.ravel(labels_train))
+        return self
+
+    def predict(self, features_test):
+        # Ta metoda jest wymagana przez sklearn do walidacji krzyżowej
+        return self.model.predict(features_test)
+
+    def predict_proba(self, features_test):
+        # Ta metoda jest używana do obliczania AUC
+        return self.model.predict_proba(features_test)
