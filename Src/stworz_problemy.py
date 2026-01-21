@@ -1,111 +1,6 @@
 '''
 import pandas as pd
 import numpy as np
-
-# 1. Wczytanie danych
-try:
-    df = pd.read_csv('Data/zapalenia_naczyn.csv', sep='|')
-except FileNotFoundError:
-    # Fallback, gdyby plik był w bieżącym katalogu
-    df = pd.read_csv('zapalenia_naczyn.csv', sep='|')
-    
-np.random.seed(42) # Dla powtarzalności
-
-# --- PROBLEM 1: LOSOWE BRAKI DANYCH (Globalnie ~5%, bez kolumny decyzyjnej) ---
-procent_brakow = 0.05
-maska_losowa = np.random.random(df.shape) < procent_brakow
-
-# Zabezpieczenie kolumny decyzyjnej (ostatniej) przed NaN
-maska_losowa[:, -1] = False
-df[maska_losowa] = np.nan
-
-# --- NOWOŚĆ: PROBLEM 1.5 - AUTOMATYCZNE OUTLIERY W KAŻDEJ KOLUMNIE LICZBOWEJ ---
-# Cel: "W każdej kolumnie liczbowej (nie binarnej) w 5% komórek dodaj wartości mocno odstające"
-
-numeric_cols = df.select_dtypes(include=[np.number]).columns
-procent_outlierow = 0.05
-
-print("Generowanie outlierów w kolumnach liczbowych...")
-
-for col in numeric_cols:
-    # Pomijamy kolumny binarne (które mają tylko 2 unikalne wartości, np. 0 i 1, ignorując NaN)
-    # Dzięki temu nie psujemy flag typu 'Plec' czy 'Zgon'
-    unikalne_wartosci = df[col].dropna().unique()
-    
-    if len(unikalne_wartosci) > 2:
-        # To jest kolumna liczbowa/ciągła (lub kategoryczna o wielu poziomach)
-        
-        # Wybieramy 5% indeksów, które nie są puste (NaN)
-        dostepne_indeksy = df[df[col].notna()].index
-        if len(dostepne_indeksy) > 0:
-            liczba_do_zmiany = int(len(dostepne_indeksy) * procent_outlierow)
-            idx_outliers = np.random.choice(dostepne_indeksy, liczba_do_zmiany, replace=False)
-            
-            # Tworzymy outliery.
-            # Strategia: Mnożymy przez 50 (jak w Twoim przykładzie) LUB dodajemy dużą wartość,
-            # aby upewnić się, że zera też staną się outlierami.
-            # Używamy wartości bezwzględnej max z kolumny jako bazy do przesunięcia.
-            max_val = df[col].abs().max()
-            if max_val == 0: max_val = 100 # Zabezpieczenie dla kolumn z samymi zerami
-            
-            # Wzór: Wartość * 50 + (Max_kolumny * 2) - to gwarantuje silne odstawanie
-            # Dla pewności rzutujemy na typ kolumny (żeby nie było błędów float w kolumnach int)
-            nowe_wartosci = df.loc[idx_outliers, col] * 50 + (max_val * 2)
-            
-            df.loc[idx_outliers, col] = nowe_wartosci
-            # print(f" - {col}: zmieniono {liczba_do_zmiany} rekordów.")
-
-# --- PROBLEM 2: SPECIFICZNE BŁĘDY LOGICZNE (NADCHODZI PO AUTOMATYCZNYCH) ---
-# Te zmiany są "ręczne" i mają specyficzny charakter (np. ujemny wiek), więc wykonujemy je PO pętli,
-# aby mieć pewność, że te konkretne przypadki (np. -100 lat) się pojawią.
-
-# A. Max_CRP (Dodatkowe ręczne, ekstremalne piki)
-if 'Max_CRP' in df.columns:
-    idx = np.random.choice(df[df['Max_CRP'].notna()].index, 5, replace=False)
-    df.loc[idx, 'Max_CRP'] = df.loc[idx, 'Max_CRP'] * 50
-
-# B. Wiek (Specyficzne błędy logiczne: ujemne, niemożliwe)
-if 'Wiek' in df.columns:
-    idx_wiek = np.random.choice(df[df['Wiek'].notna()].index, 5, replace=False)
-    # -100, 100000 (ok. 273 lata), 50 (błąd jednostki), itp.
-    bledne_wartosci = [-100, 100000, 50, 150000, -5000]
-    df.loc[idx_wiek, 'Wiek'] = bledne_wartosci
-
-# C. Sterydy (Ogromna stała)
-if 'Sterydy_Dawka_mg' in df.columns:
-    idx_st = np.random.choice(df[df['Sterydy_Dawka_mg'].notna()].index, 3, replace=False)
-    df.loc[idx_st, 'Sterydy_Dawka_mg'] = 50000 
-
-# --- PROBLEM 3: TRUDNIEJSZA NORMALIZACJA (ZMIA SKALI CAŁEJ KOLUMNY) ---
-
-# A. Kreatynina (x1000)
-if 'Kreatynina' in df.columns:
-    df['Kreatynina'] = df['Kreatynina'] * 1000
-
-# B. Czas_Pierwsze_Zaostrzenie (x1440 - minuty)
-if 'Czas_Pierwsze_Zaostrzenie' in df.columns:
-    df['Czas_Pierwsze_Zaostrzenie'] = df['Czas_Pierwsze_Zaostrzenie'] * 1440
-
-# Zapisanie pliku
-nazwa_pliku = 'Data/zapalenia_naczyn_z_problemami.csv'
-# Utworzenie katalogu Data jeśli nie istnieje
-import os
-if not os.path.exists('Data'):
-    os.makedirs('Data')
-    
-df.to_csv(nazwa_pliku, sep='|', index=False)
-
-# Raport
-print("-" * 30)
-print(f"Gotowe. Zapisano plik: {nazwa_pliku}")
-print(f"Liczba wstawionych pustych komórek (NaN): {df.isnull().sum().sum()}")
-if 'Wiek' in df.columns:
-    print(f"Przykładowe wartości wieku (w tym błędy): {df.loc[idx_wiek, 'Wiek'].values}")
-print("-" * 30)
-'''
-
-import pandas as pd
-import numpy as np
 import os
 
 # Tworzymy folder na dane jeśli nie istnieje
@@ -163,3 +58,109 @@ def generuj_problemy(sciezka_in, nazwa_out, proc_brakow):
 procenty = [0.15, 0.25, 0.50]
 for p in procenty:
     generuj_problemy('Data/zapalenia_naczyn.csv', f'zapalenia_prob_{int(p*100)}.csv', p)
+'''
+
+import pandas as pd
+import numpy as np
+import os
+
+# Konfiguracja (bez zmian w logice kolumn)
+DATASETS_CONFIG = {
+    'zapalenia_naczyn.csv': {
+        'folder': 'zapalenia',  # Nowe pole: nazwa podfolderu
+        'target': 'Zgon',
+        'protected': ['Kod', 'Zgon'],
+        'continuous': ['Wiek', 'Wiek_rozpoznania', 'Kreatynina', 'Max_CRP', 'Sterydy_Dawka_g', 'Anti-PR3_Wartosc']
+    },
+    'diabetes.csv': {
+        'folder': 'diabetes',
+        'target': 'decision',
+        'protected': ['decision'],
+        'continuous': ['plas', 'pres', 'skin', 'insu', 'mass', 'pedi', 'age']
+    },
+    'serce.csv': {
+        'folder': 'serce',
+        'target': 'diagnoza',
+        'protected': ['diagnoza'],
+        'continuous': ['wiek', 'cisnienie_krwi_spoczynek', 'cholesterol_we_krwi', 'ilosc_uderzen_serca', 'max_obnizka_st']
+    }
+}
+
+OUTPUT_DIR = 'Data'
+# Nie musimy tworzyć samego Data, bo zrobimy to dynamicznie w pętli
+
+def generuj_zepsute_dane(filename, config, procent_uszkodzen):
+    folder_name = config['folder']
+    print(f"\n--- Przetwarzanie: {filename} -> Folder: {folder_name} (Uszkodzenia: {int(procent_uszkodzen*100)}%) ---")
+    
+    # 1. Tworzenie podfolderu
+    save_dir = os.path.join(OUTPUT_DIR, folder_name)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    # 2. Wczytanie (szukamy w Data/ lub w głównym)
+    # Oryginały mogą leżeć luzem w Data/ albo w głównym folderze
+    path = f"Data/{filename}" if os.path.exists(f"Data/{filename}") else filename
+    if not os.path.exists(path):
+        print(f"POMINIĘTO: Nie znaleziono pliku źródłowego {filename}")
+        return
+
+    sep = '|' if 'zapalenia' in filename else ','
+    try:
+        df = pd.read_csv(path, sep=sep)
+    except:
+        sep = ',' if sep == '|' else '|'
+        df = pd.read_csv(path, sep=sep)
+
+    df_dirty = df.copy()
+    rows = len(df)
+    
+    # --- LOGIKA PSUCIA (BEZ ZMIAN) ---
+    target_cols = [c for c in df.columns if c not in config['protected']]
+    np.random.seed(42 + int(procent_uszkodzen*100))
+
+    # Braki
+    for col in target_cols:
+        n_missing = int(rows * procent_uszkodzen)
+        if n_missing > 0:
+            missing_indices = np.random.choice(rows, n_missing, replace=False)
+            df_dirty.loc[missing_indices, col] = np.nan
+
+    # Outliery
+    existing_cont = [c for c in config['continuous'] if c in df.columns]
+    for col in existing_cont:
+        valid_idx = df_dirty[df_dirty[col].notna()].index
+        if len(valid_idx) > 0:
+            n_outliers = max(1, int(len(valid_idx) * 0.05))
+            outlier_idx = np.random.choice(valid_idx, n_outliers, replace=False)
+            factor = np.random.choice([100, 1000, -100])
+            df_dirty.loc[outlier_idx, col] = df_dirty.loc[outlier_idx, col] * factor
+
+    # Szum kategorialny
+    categorical_cols = [c for c in target_cols if c not in existing_cont]
+    for col in categorical_cols:
+        valid_idx = df_dirty[df_dirty[col].notna()].index
+        if len(valid_idx) > 0:
+            n_noise = max(1, int(len(valid_idx) * 0.05))
+            noise_idx = np.random.choice(valid_idx, n_noise, replace=False)
+            df_dirty.loc[noise_idx, col] = 9
+
+    # --- ZAPIS DO PODFOLDERU ---
+    # Nazwa pliku wyjściowego: np. diabetes_prob_15.csv
+    # Dla zapaleń skracamy nazwę pliku, żeby pasowała do konwencji reszty skryptów
+    if 'zapalenia' in filename:
+        base_name = 'zapalenia'
+    else:
+        base_name = filename.replace('.csv', '')
+        
+    out_name = f"{base_name}_prob_{int(procent_uszkodzen*100)}.csv"
+    save_path = os.path.join(save_dir, out_name)
+    
+    df_dirty.to_csv(save_path, sep='|', index=False)
+    print(f"Zapisano w: {save_path}")
+
+# Uruchomienie
+procenty = [0.15, 0.25, 0.50]
+for filename, config in DATASETS_CONFIG.items():
+    for p in procenty:
+        generuj_zepsute_dane(filename, config, p)

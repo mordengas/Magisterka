@@ -179,28 +179,87 @@ def apply_imputation(df):
 def apply_removal(df):
     df = df.copy()
     for col in df.select_dtypes(include=[np.number]).columns:
+        # Pomijamy kolumnę decyzyjną (ostatnią)
         if col == df.columns[-1]: continue
-        q1, q3 = df[col].quantile(0.05), df[col].quantile(0.95)
+        
+        # Standardowy IQR (25% - 75%)
+        q1 = df[col].quantile(0.25)
+
+        q3 = df[col].quantile(0.75)
         iqr = q3 - q1
-        df.loc[(df[col] < q1 - 3*iqr) | (df[col] > q3 + 3*iqr), col] = np.nan
+        
+        # Jeśli IQR wynosi 0 (np. kolumna ma same zera i jedynki), nie usuwamy nic
+        if iqr == 0:
+            continue
+
+        # Zamiana outlierów na NaN
+        # Używamy 1.5 * IQR (standard) lub 3 * IQR (tylko ekstremalne)
+        # Przy naszych błędach x100, 1.5 wystarczy i jest bezpieczniejsze
+        mask = (df[col] < q1 - 1.5 * iqr) | (df[col] > q3 + 1.5 * iqr)
+        df.loc[mask, col] = np.nan
+        
     return df
 
-# Procesowanie wszystkich plików bazowych
-base_files = ['zapalenia_prob_15.csv', 'zapalenia_prob_25.csv', 'zapalenia_prob_50.csv']
+def apply_removal_rows(df):
+    df = df.copy()
+    rows_to_drop = set() # Zbiór indeksów do usunięcia
+    
+    for col in df.select_dtypes(include=[np.number]).columns:
+        if col == df.columns[-1]: continue
+        
+        q1 = df[col].quantile(0.25)
+        q3 = df[col].quantile(0.75)
+        iqr = q3 - q1
+        if iqr == 0: continue
 
-for bf in base_files:
-    path = f'Data/{bf}'
-    if not os.path.exists(path): continue
-    df_raw = pd.read_csv(path, sep='|')
-    prefix = bf.replace('.csv', '')
+        # Znajdź indeksy, gdzie są outliery
+        outliers = df[(df[col] < q1 - 1.5 * iqr) | (df[col] > q3 + 1.5 * iqr)].index
+        rows_to_drop.update(outliers)
+    
+    # Usuń zebrane indeksy
+    df = df.drop(index=list(rows_to_drop))
+    return df
 
-    # Generowanie 7 metod naprawczych
-    apply_normalization(df_raw).to_csv(f'Data/{prefix}_1_norm.csv', sep='|', index=False)
-    apply_imputation(df_raw).to_csv(f'Data/{prefix}_2_fill.csv', sep='|', index=False)
-    df_rem = apply_removal(df_raw)
-    df_rem.to_csv(f'Data/{prefix}_3_remove.csv', sep='|', index=False)
-    apply_imputation(df_rem).to_csv(f'Data/{prefix}_4_remove_fill.csv', sep='|', index=False)
-    apply_normalization(df_rem).to_csv(f'Data/{prefix}_5_remove_norm.csv', sep='|', index=False)
-    apply_normalization(apply_imputation(df_raw)).to_csv(f'Data/{prefix}_6_fill_norm.csv', sep='|', index=False)
-    apply_normalization(apply_imputation(df_rem)).to_csv(f'Data/{prefix}_7_all.csv', sep='|', index=False)
-    print(f"Naprawiono warianty dla: {bf}")
+
+# Lista folderów/datasetów
+datasets = ['zapalenia', 'diabetes', 'serce']
+procenty = [15, 25, 50]
+
+for ds in datasets:
+    # Ścieżka do podfolderu np. Data/diabetes
+    folder_path = f'Data/{ds}'
+    
+    if not os.path.exists(folder_path):
+        print(f"Pominięto folder (nie istnieje): {folder_path}")
+        continue
+
+    for p in procenty:
+        # Szukamy pliku np. Data/diabetes/diabetes_prob_15.csv
+        filename = f"{ds}_prob_{p}.csv"
+        path = f"{folder_path}/{filename}"
+        
+        if not os.path.exists(path):
+            continue
+            
+        print(f"Naprawianie: {ds} (poziom {p}%) w folderze {folder_path}...")
+        
+        df_raw = pd.read_csv(path, sep='|')
+        # Prefix do zapisu też musi zawierać folder
+        # np. Data/diabetes/diabetes_prob_15
+        save_prefix = f"{folder_path}/{ds}_prob_{p}"
+
+        # Generowanie wariantów - zapisujemy do tego samego podfolderu
+        apply_normalization(df_raw).to_csv(f'{save_prefix}_1_norm.csv', sep='|', index=False)
+        apply_imputation(df_raw).to_csv(f'{save_prefix}_2_fill.csv', sep='|', index=False)
+
+        df_rem = apply_removal(df_raw)
+        df_rem.to_csv(f'{save_prefix}_3_remove.csv', sep='|', index=False)
+        
+        apply_imputation(df_rem).to_csv(f'{save_prefix}_4_remove_fill.csv', sep='|', index=False)
+        apply_normalization(df_rem).to_csv(f'{save_prefix}_5_remove_norm.csv', sep='|', index=False)
+        apply_normalization(apply_imputation(df_raw)).to_csv(f'{save_prefix}_6_fill_norm.csv', sep='|', index=False)
+        
+        df_final = apply_normalization(apply_imputation(df_rem))
+        df_final.to_csv(f'{save_prefix}_7_all.csv', sep='|', index=False)
+
+print("\nZakończono naprawianie wszystkich plików w podfolderach.")

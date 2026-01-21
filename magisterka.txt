@@ -14,10 +14,8 @@ Napisać do Bazana o prace odnośnie odstających miejsc oraz klasa do testowani
 Przykłady modeli uczenia dla danych tabelarycznych: 
 -Random forest
 -xg boost
--knn bez sensu
--svm zbyt skomplikowany
-
-Random forest na początek. Na przykładowym zbiorze danych.
+-GaussianNB (naiwny Bayes)
+-MLPClassifier (sieć neuronowa)
 
 Choroba naczyń - dane najistotniejsze
 
@@ -32,7 +30,6 @@ Spróbować ograniczyć liczbę eksperymentów.
 Jakos zredukować liczbę wyników.
 
 Random forest, xg boost niewrażliwe na normalizacje.
-Svm wrażliwe na normalizacje.
 
 Prezentacja:
 -opis danych
@@ -40,3 +37,69 @@ Prezentacja:
 Metodach klasyfikacji wyniki
 
 Mail o listę klasyfikatorów (3 max)
+
+
+
+✅ 1. Identyfikacja i obsługa wartości odstających (outliers)
+
+Najpierw wykryj, a potem zdecyduj: usuwać czy korygować.
+
+Dlaczego pierwsze?
+
+Wartości odstające zaburzają średnią, odchylenie standardowe i medianę
+
+Mogą zepsuć imputację (np. imputację średnią)
+
+Mogą zniekształcić normalizację (szczególnie min–max)
+
+Co zrobić:
+
+wykryć (IQR, Z-score, boxplot)
+
+zdecydować:
+
+usunąć
+
+przyciąć (winsoryzacja)
+
+oznaczyć jako brakujące (NaN)
+
+✅ 2. Imputacja brakujących danych
+
+Uzupełnij braki dopiero po zajęciu się odstającymi wartościami.
+
+Dlaczego teraz?
+
+Imputacja korzysta z rozkładu danych
+
+Jeśli outliery zostały wcześniej usunięte → imputacja jest bardziej realistyczna
+
+Metody:
+
+proste: średnia, mediana, moda
+
+bardziej zaawansowane: KNN, regresja, MICE
+
+✅ 3. Normalizacja / standaryzacja
+
+Zrób ją na końcu.
+
+Dlaczego ostatnia?
+
+Normalizacja nie naprawia danych, tylko zmienia skalę
+
+Wymaga „czystych” danych:
+
+bez outlierów
+
+bez braków
+
+Najlepiej działa na danych gotowych do modelowania
+
+Przykłady:
+
+Min–Max Scaling
+
+StandardScaler (Z-score)
+
+RobustScaler (jeśli outliery nadal istnieją)

@@ -29,6 +29,9 @@ class BuildResults:
 
         auc = metrics.roc_auc_score(labels_test_auc, labels_predicted_prob_auc)
 
+        #print("AUC=", auc)
+
+        return auc
 
         '''
         from sklearn.metrics import roc_curve, roc_auc_score
@@ -54,7 +57,3 @@ class BuildResults:
         plt.grid()
         plt.show()
         '''
-
-        #print("AUC=", auc)
-
-        return auc

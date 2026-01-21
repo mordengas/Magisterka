@@ -73,8 +73,10 @@ class MyClassifier(BaseEstimator, ClassifierMixin):
 '''
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_network import MLPClassifier
+import xgboost as xgb  # Prawdziwy XGBoost
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 class MyClassifier(BaseEstimator, ClassifierMixin):
@@ -84,14 +86,29 @@ class MyClassifier(BaseEstimator, ClassifierMixin):
         self.classes_ = None
 
     def fit(self, features_train, labels_train):
+        # Pobranie unikalnych klas
         self.classes_ = np.sort(np.unique(labels_train))
         
         if self.model_type == 'RF':
             self.model = RandomForestClassifier(n_estimators=100, random_state=1234)
-        elif self.model_type == 'SVM':
-            self.model = SVC(probability=True, kernel='rbf', random_state=1234)
+            
+        elif self.model_type == 'NB':
+            # Naive Bayes (zakłada rozkład normalny zmiennych)
+            self.model = GaussianNB()
+            
+        elif self.model_type == 'MLP':
+            # Sieć neuronowa (Multi-layer Perceptron)
+            # max_iter=1000, żeby sieć zdążyła się zbiec nawet na trudnych danych
+            self.model = MLPClassifier(hidden_layer_sizes=(100,), max_iter=1500, random_state=1234)
+            
         elif self.model_type == 'XGBoost':
-            self.model = GradientBoostingClassifier(n_estimators=100, random_state=1234)
+            # Oryginalna biblioteka XGBoost
+            # use_label_encoder=False i eval_metric='logloss' usuwają ostrzeżenia w nowszych wersjach
+            self.model = xgb.XGBClassifier(
+                n_estimators=100, 
+                eval_metric='logloss', 
+                random_state=117814
+            )
             
         self.model.fit(features_train, np.ravel(labels_train))
         return self

@@ -82,79 +82,147 @@ from sklearn.impute import SimpleImputer
 import myclassifier
 import buildresultauc
 
-# Konfiguracja testów
+# --- Konfiguracja eksperymentu ---
+
+# 1. Definicja zbiorów danych
+# Format: (nazwa_folderu, nazwa_kolumny_celu, mapa_mapowania_celu)
+DATASETS_INFO = [
+    ('zapalenia', 'Zgon', None),  # Zgon jest już 0/1
+    ('diabetes', 'decision', {'tested_negative': 0, 'tested_positive': 1}),
+    ('serce', 'diagnoza', {1: 0, 2: 1})  # 1=Zdrowy(0), 2=Chory(1) - typowe dla tego zbioru
+]
+
 procenty = [15, 25, 50]
 metody = ['', '_1_norm', '_2_fill', '_3_remove', '_4_remove_fill', '_5_remove_norm', '_6_fill_norm', '_7_all']
-modele = ['RF', 'SVM', 'XGBoost']
+modele = ['RF', 'NB', 'MLP', 'XGBoost']
 
 results = []
 
-print(f"{'PLIK':<30} | {'RF':<8} | {'SVM':<8} | {'XGB':<8}")
-print("-" * 65)
+# Nagłówek tabeli
+print(f"{'PLIK':<45} | {'RF':<7} | {'NB':<7} | {'MLP':<7} | {'XGB':<7}")
+print("-" * 85)
 
-# 1. TEST PLIKU PIERWOTNEGO (Baseline)
-original_file = 'Data/zapalenia_naczyn.csv'
-if os.path.exists(original_file):
-    try:
-        df = pd.read_csv(original_file, sep='|')
-        last_col = df.columns[-1]
-        df = df.dropna(subset=[last_col])
-        y = df.iloc[:, -1].astype(int)
-        X = df.iloc[:, 1:-1]
-        X = pd.get_dummies(X)
-        X_clean = SimpleImputer(strategy='constant', fill_value=-999).fit_transform(X)
+# --- GŁÓWNA PĘTLA PO ZBIORACH DANYCH ---
+for ds_name, target_col, target_map in DATASETS_INFO:
+    
+    # === 1. TEST PLIKU PIERWOTNEGO (Baseline) ===
+    # Szukamy oryginału. Może być w Data/nazwa.csv lub Data/nazwa/nazwa.csv
+    # Dla zapaleń oryginał nazywa się inaczej (zapalenia_naczyn.csv)
+    
+    orig_filename = f"{ds_name}.csv"
+    if ds_name == 'zapalenia':
+        orig_filename = 'zapalenia_naczyn.csv'
         
-        row = {'Plik': 'ORYGINALNY (Czysty)'}
-        for m_type in modele:
-            clf = myclassifier.MyClassifier(model_type=m_type)
-            skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1234)
-            probs = cross_val_predict(clf, X_clean, y, cv=skf, method='predict_proba')
-            auc_tool = buildresultauc.BuildResults()
-            auc = auc_tool.getResultAUC(probs, y)
-            row[m_type] = round(auc, 4)
-        
-        results.append(row)
-        print(f"{row['Plik']:<30} | {row['RF']:.4f} | {row['SVM']:.4f} | {row['XGBoost'] if 'XGBoost' in row else row['XGBoost']:.4f}")
-    except Exception as e:
-        print(f"BŁĄD w pliku oryginalnym: {e}")
-
-# 2. TEST PLIKÓW Z PROBLEMAMI
-for p in procenty:
-    for m_name in metody:
-        fileName = f'Data/zapalenia_prob_{p}{m_name}.csv'
-        if not os.path.exists(fileName):
-            continue
+    # Sprawdzamy możliwe lokalizacje oryginału
+    possible_paths = [
+        f"Data/{orig_filename}",
+        f"Data/{ds_name}/{orig_filename}", # Jeśli przeniosłeś oryginał do podfolderu
+        orig_filename # Jeśli jest w głównym folderze
+    ]
+    
+    original_file = None
+    for p in possible_paths:
+        if os.path.exists(p):
+            original_file = p
+            break
             
+    if original_file:
         try:
-            df = pd.read_csv(fileName, sep='|')
-            last_col = df.columns[-1]
-            df = df.dropna(subset=[last_col])
+            # Separator: '|' dla zapaleń, ',' dla reszty
+            sep = '|' if 'zapalenia' in original_file else ','
+            df = pd.read_csv(original_file, sep=sep)
             
-            y = df.iloc[:, -1].astype(int)
-            X = df.iloc[:, 1:-1]
+            # Mapowanie celu (jeśli wymagane)
+            if target_map:
+                df[target_col] = df[target_col].map(target_map)
+            
+            # Usuwanie braków w celu
+            df = df.dropna(subset=[target_col])
+            
+            y = df[target_col].astype(int)
+            X = df.drop(columns=[target_col])
+            
+            # Usuwamy kolumnę 'Kod' jeśli istnieje (tylko w zapaleniach)
+            if 'Kod' in X.columns:
+                X = X.drop(columns=['Kod'])
+                
             X = pd.get_dummies(X)
-
-            imputer = SimpleImputer(strategy='constant', fill_value=-999)
-            X_clean = imputer.fit_transform(X)
             
-            row = {'Plik': f"p{p}{m_name if m_name else '_raw'}"}
+            # Imputer techniczny -999 dla baseline
+            X_clean = SimpleImputer(strategy='constant', fill_value=-999).fit_transform(X)
             
+            row = {'Plik': f'{ds_name}_ORYGINALNY'}
             for m_type in modele:
                 clf = myclassifier.MyClassifier(model_type=m_type)
                 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1234)
                 probs = cross_val_predict(clf, X_clean, y, cv=skf, method='predict_proba')
+                
                 auc_tool = buildresultauc.BuildResults()
                 auc = auc_tool.getResultAUC(probs, y)
                 row[m_type] = round(auc, 4)
             
             results.append(row)
-            print(f"{row['Plik']:<30} | {row['RF']:.4f} | {row['SVM']:.4f} | {row['XGBoost'] if 'XGBoost' in row else row['XGBoost']:.4f}")
-            
+            print(f"{row['Plik']:<45} | {row['RF']:.4f}  | {row['NB']:.4f}  | {row['MLP']:.4f}  | {row['XGBoost']:.4f}")
         except Exception as e:
-            print(f"BŁĄD w pliku {fileName}: {str(e)[:100]}")
+            print(f"BŁĄD w pliku oryginalnym ({ds_name}): {e}")
+    else:
+        print(f"UWAGA: Nie znaleziono oryginału dla {ds_name}")
 
-# Zapis do CSV
+
+    # === 2. TEST PLIKÓW Z PROBLEMAMI (W PODFOLDERACH) ===
+    # Pliki leżą teraz w: Data/{ds_name}/{nazwa_pliku}
+    
+    for p in procenty:
+        for m_name in metody:
+            file_prefix = ds_name
+            filename_only = f'{file_prefix}_prob_{p}{m_name}.csv'
+            full_path = f'Data/{ds_name}/{filename_only}'
+            
+            if not os.path.exists(full_path):
+                continue
+                
+            try:
+                # Pliki przetworzone mają ZAWSZE separator '|' (tak ustawiliśmy w generuj_problemy)
+                df = pd.read_csv(full_path, sep='|')
+                
+                # Mapowanie celu
+                if target_map:
+                    df[target_col] = df[target_col].map(target_map)
+
+                df = df.dropna(subset=[target_col])
+                
+                y = df[target_col].astype(int)
+                X = df.drop(columns=[target_col])
+                
+                if 'Kod' in X.columns:
+                    X = X.drop(columns=['Kod'])
+
+                X = pd.get_dummies(X)
+
+                # Imputer techniczny (-999) dla modeli
+                imputer = SimpleImputer(strategy='constant', fill_value=-999)
+                X_clean = imputer.fit_transform(X)
+                
+                row = {'Plik': f"{ds_name}_p{p}{m_name if m_name else '_raw'}"}
+                
+                for m_type in modele:
+                    clf = myclassifier.MyClassifier(model_type=m_type)
+                    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1234)
+                    probs = cross_val_predict(clf, X_clean, y, cv=skf, method='predict_proba')
+                    
+                    auc_tool = buildresultauc.BuildResults()
+                    auc = auc_tool.getResultAUC(probs, y)
+                    row[m_type] = round(auc, 4)
+                
+                results.append(row)
+                print(f"{row['Plik']:<45} | {row['RF']:.4f}  | {row['NB']:.4f}  | {row['MLP']:.4f}  | {row['XGBoost']:.4f}")
+                
+            except Exception as e:
+                # print(f"BŁĄD w {filename_only}: {str(e)[:50]}") # Opcjonalnie odkomentuj
+                pass
+
+# --- Zapis do CSV ---
 if results:
     df_res = pd.DataFrame(results)
     df_res.to_csv('wyniki_koncowe.csv', index=False)
-    print("\nGotowe! Wyniki (w tym plik oryginalny) zapisano w: wyniki_koncowe.csv")
+    print("\nGotowe! Wyniki zapisano w: wyniki_koncowe.csv")

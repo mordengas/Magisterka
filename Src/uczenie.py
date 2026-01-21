@@ -1,3 +1,4 @@
+'''
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -61,3 +62,5 @@ print("PODSUMOWANIE WYNIKÓW:")
 print("="*60)
 print(wyniki_df.to_string(index=False))
 print("="*60)
+
+'''
