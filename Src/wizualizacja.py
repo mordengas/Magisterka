@@ -21,6 +21,11 @@ plt.title("Rozkład wyników AUC dla poszczególnych modeli")
 plt.ylabel("AUC")
 plt.xlabel("Model")
 plt.tight_layout()
+plt.savefig(
+    f"rozklad_AUC.png",
+    dpi=300,
+    bbox_inches="tight"
+)
 plt.show()
 
 # =========================

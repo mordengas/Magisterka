@@ -32,9 +32,10 @@ Jakos zredukować liczbę wyników.
 Random forest, xg boost niewrażliwe na normalizacje.
 
 Prezentacja:
--opis danych
--o metodach czyszczenia
-Metodach klasyfikacji wyniki
+- opis danych
+- o metodach czyszczenia
+- Metodach klasyfikacji
+- wyniki
 
 Mail o listę klasyfikatorów (3 max)
 
