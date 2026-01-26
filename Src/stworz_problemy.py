@@ -67,7 +67,7 @@ import os
 # Konfiguracja (bez zmian w logice kolumn)
 DATASETS_CONFIG = {
     'zapalenia_naczyn.csv': {
-        'folder': 'zapalenia',  # Nowe pole: nazwa podfolderu
+        'folder': 'zapalenia',
         'target': 'Zgon',
         'protected': ['Kod', 'Zgon'],
         'continuous': ['Wiek', 'Wiek_rozpoznania', 'Kreatynina', 'Max_CRP', 'Sterydy_Dawka_g', 'Anti-PR3_Wartosc']
@@ -87,7 +87,6 @@ DATASETS_CONFIG = {
 }
 
 OUTPUT_DIR = 'Data'
-# Nie musimy tworzyć samego Data, bo zrobimy to dynamicznie w pętli
 
 def generuj_zepsute_dane(filename, config, procent_uszkodzen):
     folder_name = config['folder']
@@ -98,8 +97,7 @@ def generuj_zepsute_dane(filename, config, procent_uszkodzen):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    # 2. Wczytanie (szukamy w Data/ lub w głównym)
-    # Oryginały mogą leżeć luzem w Data/ albo w głównym folderze
+    # 2. Wczytanie
     path = f"Data/{filename}" if os.path.exists(f"Data/{filename}") else filename
     if not os.path.exists(path):
         print(f"POMINIĘTO: Nie znaleziono pliku źródłowego {filename}")
@@ -115,39 +113,41 @@ def generuj_zepsute_dane(filename, config, procent_uszkodzen):
     df_dirty = df.copy()
     rows = len(df)
     
-    # --- LOGIKA PSUCIA (BEZ ZMIAN) ---
     target_cols = [c for c in df.columns if c not in config['protected']]
     np.random.seed(42 + int(procent_uszkodzen*100))
 
-    # Braki
+    # 1. Braki danych (NaN) - zależne od procent_uszkodzen
     for col in target_cols:
         n_missing = int(rows * procent_uszkodzen)
         if n_missing > 0:
             missing_indices = np.random.choice(rows, n_missing, replace=False)
             df_dirty.loc[missing_indices, col] = np.nan
 
-    # Outliery
+    # 2. Outliery - TERAZ ZALEŻNE OD procent_uszkodzen (zamiast sztywnego 5%)
+    # Uwaga: Aplikujemy to do pozostałych (nie-NaN) wartości w kolumnach ciągłych
     existing_cont = [c for c in config['continuous'] if c in df.columns]
     for col in existing_cont:
         valid_idx = df_dirty[df_dirty[col].notna()].index
         if len(valid_idx) > 0:
-            n_outliers = max(1, int(len(valid_idx) * 0.05))
+            # Zmiana: używamy procent_uszkodzen zamiast 0.05
+            n_outliers = max(1, int(len(valid_idx) * procent_uszkodzen))
             outlier_idx = np.random.choice(valid_idx, n_outliers, replace=False)
+            
             factor = np.random.choice([100, 1000, -100])
             df_dirty.loc[outlier_idx, col] = df_dirty.loc[outlier_idx, col] * factor
 
-    # Szum kategorialny
+    # 3. Szum kategorialny - TERAZ ZALEŻNE OD procent_uszkodzen (zamiast sztywnego 5%)
+    # Aplikujemy do kolumn, które nie są ciągłe (binarne/kategorialne)
     categorical_cols = [c for c in target_cols if c not in existing_cont]
     for col in categorical_cols:
         valid_idx = df_dirty[df_dirty[col].notna()].index
         if len(valid_idx) > 0:
-            n_noise = max(1, int(len(valid_idx) * 0.05))
+            # Zmiana: używamy procent_uszkodzen zamiast 0.05
+            n_noise = max(1, int(len(valid_idx) * procent_uszkodzen))
             noise_idx = np.random.choice(valid_idx, n_noise, replace=False)
             df_dirty.loc[noise_idx, col] = 9
 
-    # --- ZAPIS DO PODFOLDERU ---
-    # Nazwa pliku wyjściowego: np. diabetes_prob_15.csv
-    # Dla zapaleń skracamy nazwę pliku, żeby pasowała do konwencji reszty skryptów
+    # Zapis
     if 'zapalenia' in filename:
         base_name = 'zapalenia'
     else:
