@@ -223,7 +223,7 @@ def apply_removal_rows(df):
 
 # Lista folderów/datasetów
 datasets = ['zapalenia', 'diabetes', 'serce']
-procenty = [15, 25, 50]
+procenty = [25, 50, 75]
 
 for ds in datasets:
     # Ścieżka do podfolderu np. Data/diabetes

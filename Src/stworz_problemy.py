@@ -160,7 +160,7 @@ def generuj_zepsute_dane(filename, config, procent_uszkodzen):
     print(f"Zapisano w: {save_path}")
 
 # Uruchomienie
-procenty = [0.15, 0.25, 0.50]
+procenty = [0.25, 0.50, 0.75]
 for filename, config in DATASETS_CONFIG.items():
     for p in procenty:
         generuj_zepsute_dane(filename, config, p)

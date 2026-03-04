@@ -92,7 +92,7 @@ DATASETS_INFO = [
     ('serce', 'diagnoza', {1: 0, 2: 1})  # 1=Zdrowy(0), 2=Chory(1) - typowe dla tego zbioru
 ]
 
-procenty = [15, 25, 50]
+procenty = [25, 50, 75]
 metody = ['', '_1_norm', '_2_fill', '_3_remove', '_4_remove_fill', '_5_remove_norm', '_6_fill_norm', '_7_all']
 modele = ['RF', 'NB', 'MLP', 'XGBoost']
 
