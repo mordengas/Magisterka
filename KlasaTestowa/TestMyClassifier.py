@@ -92,7 +92,7 @@ DATASETS_INFO = [
     ('serce', 'diagnoza', {1: 0, 2: 1})  # 1=Zdrowy(0), 2=Chory(1) - typowe dla tego zbioru
 ]
 
-procenty = [25, 50, 75]
+procenty = [20, 40, 60]
 metody = ['', '_1_norm', '_2_fill', '_3_remove', '_4_remove_fill', '_5_remove_norm', '_6_fill_norm', '_7_all']
 modele = ['RF', 'NB', 'MLP', 'XGBoost']
 
@@ -149,7 +149,10 @@ for ds_name, target_col, target_map in DATASETS_INFO:
             X = pd.get_dummies(X)
             
             # Imputer techniczny -999 dla baseline
-            X_clean = SimpleImputer(strategy='constant', fill_value=-999).fit_transform(X)
+            #X_clean = SimpleImputer(strategy='constant', fill_value=-999).fit_transform(X)
+
+            imputer = SimpleImputer(strategy='mean')
+            X_clean = imputer.fit_transform(X)
             
             row = {'Plik': f'{ds_name}_ORYGINALNY'}
             for m_type in modele:

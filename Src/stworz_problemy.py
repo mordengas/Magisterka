@@ -59,7 +59,8 @@ procenty = [0.15, 0.25, 0.50]
 for p in procenty:
     generuj_problemy('Data/zapalenia_naczyn.csv', f'zapalenia_prob_{int(p*100)}.csv', p)
 '''
-
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
 import pandas as pd
 import numpy as np
 import os
@@ -85,6 +86,42 @@ DATASETS_CONFIG = {
         'continuous': ['wiek', 'cisnienie_krwi_spoczynek', 'cholesterol_we_krwi', 'ilosc_uderzen_serca', 'max_obnizka_st']
     }
 }
+
+def znajdz_kluczowe_kolumny(df, nazwa_celu, ile_kolumn=3):
+    """
+    Funkcja uczy szybki model na oryginalnych danych i zwraca listę 
+    'ile_kolumn' najważniejszych zmiennych decyzyjnych.
+    """
+    df_temp = df.copy()
+    
+    # Usuwamy braki w kolumnie decyzyjnej
+    df_temp = df_temp.dropna(subset=[nazwa_celu])
+    y = df_temp[nazwa_celu]
+    
+    # Wyciągamy tylko kolumny liczbowe do szybkiej analizy (bez celu i kodu)
+    X = df_temp.drop(columns=[nazwa_celu])
+    if 'Kod' in X.columns:
+        X = X.drop(columns=['Kod'])
+        
+    X_num = X.select_dtypes(include=[np.number])
+    
+    if X_num.empty:
+        return []
+        
+    # Szybkie wypełnienie braków medianą, żeby model mógł zadziałać
+    X_clean = SimpleImputer(strategy='median').fit_transform(X_num)
+    
+    # Trenujemy mały las losowy
+    rf = RandomForestClassifier(n_estimators=50, random_state=42)
+    rf.fit(X_clean, y)
+    
+    # Pobieramy ważność i wybieramy najlepsze
+    waznosc = rf.feature_importances_
+    indeksy_top = np.argsort(waznosc)[::-1][:ile_kolumn]
+    
+    najwazniejsze_kolumny = [X_num.columns[i] for i in indeksy_top]
+    return najwazniejsze_kolumny
+
 
 OUTPUT_DIR = 'Data'
 
@@ -116,9 +153,21 @@ def generuj_zepsute_dane(filename, config, procent_uszkodzen):
     target_cols = [c for c in df.columns if c not in config['protected']]
     np.random.seed(42 + int(procent_uszkodzen*100))
 
-    # 1. Braki danych (NaN) - zależne od procent_uszkodzen
+    # Automatyczne szukanie najważniejszych kolumn
+    kolumny_kluczowe = znajdz_kluczowe_kolumny(df, config['target'], ile_kolumn=3)
+    print(f"    Kluczowe kolumny do mocniejszego psucia: {kolumny_kluczowe}")
+
+    # 1. Braki danych (NaN) - zależne od procent_uszkodzen i wagi kolumny
     for col in target_cols:
-        n_missing = int(rows * procent_uszkodzen)
+        # Domyślny procent uszkodzeń (np. 0.10, 0.20)
+        aktualny_procent = procent_uszkodzen
+        
+        # Jeśli kolumna jest kluczowa dla diagnozy, psujemy ją 2.5 raza mocniej!
+        if col in kolumny_kluczowe:
+            # Maksymalnie zepsujemy 60% danych w kluczowej kolumnie, żeby całkiem nie zniszczyć bazy
+            aktualny_procent = min(0.60, procent_uszkodzen * 2.5) 
+            
+        n_missing = int(rows * aktualny_procent)
         if n_missing > 0:
             missing_indices = np.random.choice(rows, n_missing, replace=False)
             df_dirty.loc[missing_indices, col] = np.nan
@@ -129,7 +178,6 @@ def generuj_zepsute_dane(filename, config, procent_uszkodzen):
     for col in existing_cont:
         valid_idx = df_dirty[df_dirty[col].notna()].index
         if len(valid_idx) > 0:
-            # Zmiana: używamy procent_uszkodzen zamiast 0.05
             n_outliers = max(1, int(len(valid_idx) * procent_uszkodzen))
             outlier_idx = np.random.choice(valid_idx, n_outliers, replace=False)
             
@@ -160,7 +208,7 @@ def generuj_zepsute_dane(filename, config, procent_uszkodzen):
     print(f"Zapisano w: {save_path}")
 
 # Uruchomienie
-procenty = [0.25, 0.50, 0.75]
+procenty = [0.20, 0.40, 0.60]
 for filename, config in DATASETS_CONFIG.items():
     for p in procenty:
         generuj_zepsute_dane(filename, config, p)

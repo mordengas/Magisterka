@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # =========================
 df = pd.read_csv("wyniki_koncowe.csv")
 
-models = ['RF', 'NB', 'MLP', 'XGBoost']
+models = ['NB', 'MLP', 'XGBoost','RF']
 available_models = [m for m in models if m in df.columns]
 
 sns.set_theme(style="whitegrid")

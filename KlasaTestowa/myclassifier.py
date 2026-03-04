@@ -90,7 +90,7 @@ class MyClassifier(BaseEstimator, ClassifierMixin):
         self.classes_ = np.sort(np.unique(labels_train))
         
         if self.model_type == 'RF':
-            self.model = RandomForestClassifier(n_estimators=100, random_state=1234)
+            self.model = RandomForestClassifier(n_estimators=100)
             
         elif self.model_type == 'NB':
             # Naive Bayes (zakłada rozkład normalny zmiennych)
@@ -99,15 +99,15 @@ class MyClassifier(BaseEstimator, ClassifierMixin):
         elif self.model_type == 'MLP':
             # Sieć neuronowa (Multi-layer Perceptron)
             # max_iter=1000, żeby sieć zdążyła się zbiec nawet na trudnych danych
-            self.model = MLPClassifier(hidden_layer_sizes=(100,), max_iter=1500, random_state=1234)
+            self.model = MLPClassifier(hidden_layer_sizes=(100,), max_iter=1500)
             
         elif self.model_type == 'XGBoost':
             # Oryginalna biblioteka XGBoost
             # use_label_encoder=False i eval_metric='logloss' usuwają ostrzeżenia w nowszych wersjach
             self.model = xgb.XGBClassifier(
                 n_estimators=100, 
-                eval_metric='logloss', 
-                random_state=117814
+                eval_metric='logloss'
+             
             )
             
         self.model.fit(features_train, np.ravel(labels_train))

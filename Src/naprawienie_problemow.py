@@ -161,43 +161,100 @@ import pandas as pd
 import numpy as np
 import os
 
+from sklearn.impute import KNNImputer
+
+#def apply_normalization(df):
+#    df = df.copy()
+#    for col in df.select_dtypes(include=[np.number]).columns:
+#        if col != df.columns[-1] and df[col].nunique() > 2:
+#            val_min, val_max = df[col].min(), df[col].max()
+#            if val_max != val_min:
+#                df[col] = (df[col] - val_min) / (val_max - val_min)
+#    return df
+
 def apply_normalization(df):
     df = df.copy()
     for col in df.select_dtypes(include=[np.number]).columns:
         if col != df.columns[-1] and df[col].nunique() > 2:
-            val_min, val_max = df[col].min(), df[col].max()
-            if val_max != val_min:
-                df[col] = (df[col] - val_min) / (val_max - val_min)
+            srednia = df[col].mean()
+            odchylenie = df[col].std()
+            
+            # Zapobiegamy dzieleniu przez zero
+            if odchylenie != 0 and pd.notna(odchylenie):
+                df[col] = (df[col] - srednia) / odchylenie
     return df
 
+#def apply_imputation(df):
+#    df = df.copy()
+#    for col in df.select_dtypes(include=[np.number]).columns:
+#        df[col] = df[col].fillna(df[col].median())
+#    return df
 def apply_imputation(df):
     df = df.copy()
-    for col in df.select_dtypes(include=[np.number]).columns:
-        df[col] = df[col].fillna(df[col].median())
+    
+    # Wybieramy tylko kolumny liczbowe (bez kolumny decyzyjnej)
+    cols_to_impute = [col for col in df.select_dtypes(include=[np.number]).columns if col != df.columns[-1]]
+    
+    if len(cols_to_impute) > 0:
+        imputer = KNNImputer(n_neighbors=5, weights='distance')
+        df[cols_to_impute] = imputer.fit_transform(df[cols_to_impute])
+        
+    # Dla kolumn tekstowych/kategorialnych bez zmian zostawiamy modę (jeśli takie masz)
+    for col in df.select_dtypes(exclude=[np.number]).columns:
+        if df[col].isnull().any() and not df[col].mode().empty:
+            df[col] = df[col].fillna(df[col].mode()[0])
+            
     return df
 
 def apply_removal(df):
     df = df.copy()
+    
+    # KROK 1: Usuwanie skrajnych outlierów z kolumn ciągłych (liczbowych)
     for col in df.select_dtypes(include=[np.number]).columns:
         # Pomijamy kolumnę decyzyjną (ostatnią)
-        if col == df.columns[-1]: continue
+        if col == df.columns[-1]: 
+            continue
         
-        # Standardowy IQR (25% - 75%)
+        # Jeśli kolumna ma mało unikalnych wartości (np. < 10), traktujemy ją jako kategorialną 
+        # i zostawiamy na Krok 2
+        if df[col].nunique() < 10:
+            continue
+        
         q1 = df[col].quantile(0.25)
-
         q3 = df[col].quantile(0.75)
         iqr = q3 - q1
         
-        # Jeśli IQR wynosi 0 (np. kolumna ma same zera i jedynki), nie usuwamy nic
-        if iqr == 0:
+        # Jeśli IQR wynosi 0 (brak odpowiedniej wariancji), pomijamy
+        if iqr == 0: 
             continue
 
-        # Zamiana outlierów na NaN
-        # Używamy 1.5 * IQR (standard) lub 3 * IQR (tylko ekstremalne)
-        # Przy naszych błędach x100, 1.5 wystarczy i jest bezpieczniejsze
-        mask = (df[col] < q1 - 1.5 * iqr) | (df[col] > q3 + 1.5 * iqr)
+        # ZMIANA: Mnożnik 3.0 pozwala usunąć tylko skrajne, sztuczne błędy (np. x100),
+        # chroniąc jednocześnie naturalne wartości odchylone (prawdziwy sygnał medyczny).
+        mnoznik = 3.0 
+        dolna_granica = q1 - mnoznik * iqr
+        gorna_granica = q3 + mnoznik * iqr
+        
+        # Zamiana gigantycznych outlierów na NaN
+        mask = (df[col] < dolna_granica) | (df[col] > gorna_granica)
         df.loc[mask, col] = np.nan
         
+    # KROK 2: Usuwanie szumu z kolumn kategorialnych (np. sztucznych wartości "9")
+    for col in df.columns:
+        if col == df.columns[-1]: 
+            continue
+        
+        # Analizujemy tylko kolumny kategorialne (te z małą liczbą unikalnych wartości)
+        if df[col].nunique() < 10:
+            # Sposób automatyczny: sprawdzamy częstotliwość występowania każdej wartości.
+            # Zostawiamy tylko te kategorie, które stanowią rozsądną część danych (np. > 5%).
+            # Pozwoli to wyłapać rzadkie błędy ("9") i zamienić je na NaN.
+            czestotliwosc = df[col].value_counts(normalize=True)
+            poprawne_kategorie = czestotliwosc[czestotliwosc > 0.05].index
+            
+            # Zaznaczamy wartości, które NIE należą do poprawnych kategorii (i nie są już NaN)
+            mask = ~df[col].isin(poprawne_kategorie) & df[col].notna()
+            df.loc[mask, col] = np.nan
+
     return df
 
 def apply_removal_rows(df):
@@ -223,7 +280,7 @@ def apply_removal_rows(df):
 
 # Lista folderów/datasetów
 datasets = ['zapalenia', 'diabetes', 'serce']
-procenty = [25, 50, 75]
+procenty = [20, 40, 60]
 
 for ds in datasets:
     # Ścieżka do podfolderu np. Data/diabetes
