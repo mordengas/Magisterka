@@ -1,231 +1,322 @@
-'''import numpy as np
-import pandas as pd
-from sklearn.model_selection import cross_val_predict
-from sklearn.model_selection import StratifiedKFold
-import buildresultauc 
-import myclassifier
-
-# Lista plików do porównania
-files_to_compare = [
-    'Data/zapalenia_naczyn.csv',
-    'Data/zapalenia_naczyn_z_problemami.csv',
-    'Data/zapalenia_1_norm.csv',
-    'Data/zapalenia_2_fill.csv',
-    'Data/zapalenia_3_remove.csv',
-    'Data/zapalenia_4_remove_fill.csv',
-    'Data/zapalenia_5_remove_norm.csv',
-    'Data/zapalenia_6_fill_norm.csv',
-    'Data/zapalenia_7_all.csv'
-]
-
-results = {}
-
-print(f"{'PLIK':<40} | {'AUC':<10}")
-print("-" * 55)
-
-for fileName in files_to_compare:
-    try:
-        # Odczytanie zbioru danych
-        dataset = pd.read_csv(fileName, sep='|') 
-
-        # Znajdujemy nazwę ostatniej kolumny (kolumna decyzyjna)
-        last_col_name = dataset.columns[-1]
-        
-        # Usuwamy wiersze, gdzie w kolumnie decyzyjnej jest NaN (pusto)
-        # To eliminuje błąd "invalid value encountered in cast"
-        dataset = dataset.dropna(subset=[last_col_name])
-        
-        noColumn = dataset.shape[1]
-        
-        # Wyodrębnienie cech (odrzucamy pierwszą kolumnę 'Kod' i ostatnią 'Klasa')
-        features = dataset.iloc[:, 1:noColumn - 1]
-        
-        # Wyodrębnienie kolumny decyzyjnej
-        labels = dataset.iloc[:, [noColumn - 1]]
-        labels = np.ravel(labels)
-        
-        # WAŻNE: Zamiana na int, aby uniknąć problemu 1.0 != "1"
-        # Jeśli w pliku CSV są braki w kolumnie decyzyjnej, trzeba je najpierw usunąć
-        if np.issubdtype(labels.dtype, np.floating):
-             labels = labels.astype(int)
-
-        # Inicjalizacja klasyfikatora
-        model = myclassifier.MyClassifier()
-
-        # Walidacja krzyżowa
-        skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=1234)
-        labels_predicted_prob = cross_val_predict(model, features, labels, n_jobs=-1, cv=skf, method='predict_proba')
-
-        # Obliczenie AUC
-        buildResults = buildresultauc.BuildResults()
-        auc = buildResults.getResultAUC(labels_predicted_prob, labels)
-        
-        results[fileName] = auc
-        print(f"{fileName:<40} | {auc:.4f}")
-
-    except Exception as e:
-        print(f"{fileName:<40} | BŁĄD: {e}")
-
-print("-" * 55)
-
-# Znalezienie najlepszego wyniku
-if results:
-    best_file = max(results, key=results.get)
-    print(f"\nNajlepszy wynik (AUC={results[best_file]:.4f}) uzyskano dla pliku:\n-> {best_file}")
-'''
-
-import pandas as pd
-import numpy as np
 import os
-from sklearn.model_selection import cross_val_predict, StratifiedKFold
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+from joblib import Parallel, delayed
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
-import myclassifier
-import buildresultauc
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_network import MLPClassifier
+from sklearn.pipeline import Pipeline
 
-# --- Konfiguracja eksperymentu ---
+import xgboost as xgb
 
-# 1. Definicja zbiorów danych
-# Format: (nazwa_folderu, nazwa_kolumny_celu, mapa_mapowania_celu)
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from Src.cleaning_methods import build_cleaning_pipeline
+
+
 DATASETS_INFO = [
-    ('zapalenia', 'Zgon', None),  # Zgon jest już 0/1
-    ('diabetes', 'decision', {'tested_negative': 0, 'tested_positive': 1}),
-    ('serce', 'diagnoza', {1: 0, 2: 1})  # 1=Zdrowy(0), 2=Chory(1) - typowe dla tego zbioru
+    {
+        "name": "zapalenia",
+        "original_file": "Data/zapalenia_naczyn.csv",
+        "target_col": "Zgon",
+        "separator": "|",
+        "target_map": None,
+        "drop_columns": ["Kod"],
+    },
+    {
+        "name": "diabetes",
+        "original_file": "Data/diabetes.csv",
+        "target_col": "decision",
+        "separator": ",",
+        "target_map": {"tested_negative": 0, "tested_positive": 1},
+        "drop_columns": [],
+    },
+    {
+        "name": "serce",
+        "original_file": "Data/serce.csv",
+        "target_col": "diagnoza",
+        "separator": ",",
+        "target_map": {1: 0, 2: 1},
+        "drop_columns": [],
+    },
+    {
+        "name": "rezygnacje",
+        "original_file": "Data/rezygnacje.csv",
+        "target_col": "REZYGN",
+        "separator": ",",
+        "target_map": None,
+        "drop_columns": ["NR_TEL"],
+    },
 ]
 
-procenty = [20, 40, 60]
-metody = ['', '_1_norm', '_2_fill', '_3_remove', '_4_remove_fill', '_5_remove_norm', '_6_fill_norm', '_7_all']
-modele = ['RF', 'NB', 'MLP', 'XGBoost']
-
-results = []
-
-# Nagłówek tabeli
-print(f"{'PLIK':<45} | {'RF':<7} | {'NB':<7} | {'MLP':<7} | {'XGB':<7}")
-print("-" * 85)
-
-# --- GŁÓWNA PĘTLA PO ZBIORACH DANYCH ---
-for ds_name, target_col, target_map in DATASETS_INFO:
-    
-    # === 1. TEST PLIKU PIERWOTNEGO (Baseline) ===
-    # Szukamy oryginału. Może być w Data/nazwa.csv lub Data/nazwa/nazwa.csv
-    # Dla zapaleń oryginał nazywa się inaczej (zapalenia_naczyn.csv)
-    
-    orig_filename = f"{ds_name}.csv"
-    if ds_name == 'zapalenia':
-        orig_filename = 'zapalenia_naczyn.csv'
-        
-    # Sprawdzamy możliwe lokalizacje oryginału
-    possible_paths = [
-        f"Data/{orig_filename}",
-        f"Data/{ds_name}/{orig_filename}", # Jeśli przeniosłeś oryginał do podfolderu
-        orig_filename # Jeśli jest w głównym folderze
-    ]
-    
-    original_file = None
-    for p in possible_paths:
-        if os.path.exists(p):
-            original_file = p
-            break
-            
-    if original_file:
-        try:
-            # Separator: '|' dla zapaleń, ',' dla reszty
-            sep = '|' if 'zapalenia' in original_file else ','
-            df = pd.read_csv(original_file, sep=sep)
-            
-            # Mapowanie celu (jeśli wymagane)
-            if target_map:
-                df[target_col] = df[target_col].map(target_map)
-            
-            # Usuwanie braków w celu
-            df = df.dropna(subset=[target_col])
-            
-            y = df[target_col].astype(int)
-            X = df.drop(columns=[target_col])
-            
-            # Usuwamy kolumnę 'Kod' jeśli istnieje (tylko w zapaleniach)
-            if 'Kod' in X.columns:
-                X = X.drop(columns=['Kod'])
-                
-            X = pd.get_dummies(X)
-            
-            # Imputer techniczny -999 dla baseline
-            #X_clean = SimpleImputer(strategy='constant', fill_value=-999).fit_transform(X)
-
-            imputer = SimpleImputer(strategy='mean')
-            X_clean = imputer.fit_transform(X)
-            
-            row = {'Plik': f'{ds_name}_ORYGINALNY'}
-            for m_type in modele:
-                clf = myclassifier.MyClassifier(model_type=m_type)
-                skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1234)
-                probs = cross_val_predict(clf, X_clean, y, cv=skf, method='predict_proba')
-                
-                auc_tool = buildresultauc.BuildResults()
-                auc = auc_tool.getResultAUC(probs, y)
-                row[m_type] = round(auc, 4)
-            
-            results.append(row)
-            print(f"{row['Plik']:<45} | {row['RF']:.4f}  | {row['NB']:.4f}  | {row['MLP']:.4f}  | {row['XGBoost']:.4f}")
-        except Exception as e:
-            print(f"BŁĄD w pliku oryginalnym ({ds_name}): {e}")
-    else:
-        print(f"UWAGA: Nie znaleziono oryginału dla {ds_name}")
+METHODS = ["raw", "norm", "fill", "remove", "remove_fill", "remove_norm", "fill_norm", "all"]
+MODELS = ["RF", "NB", "MLP", "XGBoost"]
+DAMAGE_LEVELS = [20, 40, 60]
+DAMAGE_REPEATS = [1, 2, 3, 4, 5]
+CV_RANDOM_STATES = [101, 202, 303, 404, 505]
+PARALLEL_JOBS = max(1, min(8, (os.cpu_count() or 4) - 2))
 
 
-    # === 2. TEST PLIKÓW Z PROBLEMAMI (W PODFOLDERACH) ===
-    # Pliki leżą teraz w: Data/{ds_name}/{nazwa_pliku}
-    
-    for p in procenty:
-        for m_name in metody:
-            file_prefix = ds_name
-            filename_only = f'{file_prefix}_prob_{p}{m_name}.csv'
-            full_path = f'Data/{ds_name}/{filename_only}'
-            
-            if not os.path.exists(full_path):
-                continue
-                
-            try:
-                # Pliki przetworzone mają ZAWSZE separator '|' (tak ustawiliśmy w generuj_problemy)
-                df = pd.read_csv(full_path, sep='|')
-                
-                # Mapowanie celu
-                if target_map:
-                    df[target_col] = df[target_col].map(target_map)
+def get_estimator(model_name, random_state):
+    if model_name == "RF":
+        return RandomForestClassifier(
+            n_estimators=300,
+            random_state=random_state,
+            n_jobs=-1,
+        )
 
-                df = df.dropna(subset=[target_col])
-                
-                y = df[target_col].astype(int)
-                X = df.drop(columns=[target_col])
-                
-                if 'Kod' in X.columns:
-                    X = X.drop(columns=['Kod'])
+    if model_name == "NB":
+        return GaussianNB()
 
-                X = pd.get_dummies(X)
+    if model_name == "MLP":
+        return MLPClassifier(
+            hidden_layer_sizes=(100,),
+            max_iter=2000,
+            random_state=random_state,
+        )
 
-                # Imputer techniczny (-999) dla modeli
-                imputer = SimpleImputer(strategy='constant', fill_value=-999)
-                X_clean = imputer.fit_transform(X)
-                
-                row = {'Plik': f"{ds_name}_p{p}{m_name if m_name else '_raw'}"}
-                
-                for m_type in modele:
-                    clf = myclassifier.MyClassifier(model_type=m_type)
-                    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1234)
-                    probs = cross_val_predict(clf, X_clean, y, cv=skf, method='predict_proba')
-                    
-                    auc_tool = buildresultauc.BuildResults()
-                    auc = auc_tool.getResultAUC(probs, y)
-                    row[m_type] = round(auc, 4)
-                
-                results.append(row)
-                print(f"{row['Plik']:<45} | {row['RF']:.4f}  | {row['NB']:.4f}  | {row['MLP']:.4f}  | {row['XGBoost']:.4f}")
-                
-            except Exception as e:
-                # print(f"BŁĄD w {filename_only}: {str(e)[:50]}") # Opcjonalnie odkomentuj
-                pass
+    if model_name == "XGBoost":
+        return xgb.XGBClassifier(
+            n_estimators=250,
+            max_depth=4,
+            learning_rate=0.05,
+            subsample=0.9,
+            colsample_bytree=0.9,
+            eval_metric="logloss",
+            random_state=random_state,
+            n_jobs=1,
+        )
 
-# --- Zapis do CSV ---
-if results:
-    df_res = pd.DataFrame(results)
-    df_res.to_csv('wyniki_koncowe.csv', index=False)
-    print("\nGotowe! Wyniki zapisano w: wyniki_koncowe.csv")
+    raise ValueError(f"Nieznany model: {model_name}")
+
+
+def load_dataset(path, separator, target_col, target_map):
+    df = pd.read_csv(path, sep=separator)
+    if target_map is not None:
+        df[target_col] = df[target_col].map(target_map)
+
+    df = df.dropna(subset=[target_col]).copy()
+    df[target_col] = df[target_col].astype(int)
+    return df
+
+
+def build_model_pipeline(df, target_col, method_name, estimator, drop_columns):
+    X = df.drop(columns=[target_col, *drop_columns], errors="ignore")
+    cleaning_pipeline = build_cleaning_pipeline(X, method_name)
+
+    return Pipeline(
+        [
+            ("cleaning", cleaning_pipeline),
+            ("compatibility_imputer", SimpleImputer(strategy="constant", fill_value=0.0)),
+            ("model", estimator),
+        ]
+    )
+
+
+def evaluate_dataframe(df, target_col, method_name, model_name, drop_columns):
+    X = df.drop(columns=[target_col, *drop_columns], errors="ignore")
+    y = df[target_col]
+    rows = []
+
+    for cv_repeat, cv_seed in enumerate(CV_RANDOM_STATES, start=1):
+        estimator = get_estimator(model_name, cv_seed)
+        pipeline = build_model_pipeline(
+            df=df,
+            target_col=target_col,
+            method_name=method_name,
+            estimator=clone(estimator),
+            drop_columns=drop_columns,
+        )
+
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=cv_seed)
+        fold_scores = cross_val_score(
+            pipeline,
+            X,
+            y,
+            cv=cv,
+            scoring="roc_auc",
+            n_jobs=1,
+        )
+
+        rows.append(
+            {
+                "CVRepeat": cv_repeat,
+                "CVSeed": cv_seed,
+                "AUC": round(float(fold_scores.mean()), 4),
+            }
+        )
+
+    return rows
+
+
+def resolve_dirty_path(dataset_name, damage_level, damage_repeat):
+    repeated_name = f"Data/{dataset_name}/{dataset_name}_prob_{damage_level}_r{damage_repeat}.csv"
+    legacy_name = f"Data/{dataset_name}/{dataset_name}_prob_{damage_level}.csv"
+
+    if os.path.exists(repeated_name):
+        return repeated_name, damage_repeat
+    if os.path.exists(legacy_name):
+        return legacy_name, 1
+    return None, None
+
+
+def summarize_results(df_details):
+    summary = (
+        df_details.groupby(["Dataset", "PoziomUszkodzen", "Metoda", "Model"], dropna=False)["AUC"]
+        .agg(["mean", "std", "count"])
+        .reset_index()
+        .rename(
+            columns={
+                "mean": "AUC_srednia",
+                "std": "AUC_std",
+                "count": "Liczba_powtorzen",
+            }
+        )
+    )
+
+    summary["AUC_srednia"] = summary["AUC_srednia"].round(4)
+    summary["AUC_std"] = summary["AUC_std"].fillna(0.0).round(4)
+    return summary
+
+
+def main():
+    print("=== WALIDACJA BEZ DATA LEAKAGE ===")
+    print("Czyszczenie jest dopasowywane osobno w kazdym foldzie.")
+    print(f"Rownolegle zadania: {PARALLEL_JOBS}")
+
+    tasks = build_tasks()
+    print(f"Liczba zadan: {len(tasks)}")
+
+    parallel_results = Parallel(n_jobs=PARALLEL_JOBS, backend="loky", verbose=10)(
+        delayed(run_task)(task) for task in tasks
+    )
+
+    details = [row for task_rows in parallel_results for row in task_rows]
+
+    details_df = pd.DataFrame(details)
+    details_df.to_csv("wyniki_szczegolowe.csv", index=False)
+
+    summary_df = summarize_results(details_df)
+    summary_df.to_csv("wyniki_koncowe.csv", index=False)
+
+    print("\n=== PODSUMOWANIE ===")
+    print(summary_df.to_string(index=False))
+    print("\nZapisano:")
+    print("- wyniki_szczegolowe.csv")
+    print("- wyniki_koncowe.csv")
+
+
+def build_tasks():
+    tasks = []
+
+    for ds in DATASETS_INFO:
+        original_df = load_dataset(
+            path=ds["original_file"],
+            separator=ds["separator"],
+            target_col=ds["target_col"],
+            target_map=ds["target_map"],
+        )
+
+        for model_name in MODELS:
+            tasks.append(
+                {
+                    "Dataset": ds["name"],
+                    "PoziomUszkodzen": "ORYGINALNY",
+                    "Metoda": "raw",
+                    "Model": model_name,
+                    "DamageRepeat": 0,
+                    "df": original_df,
+                    "target_col": ds["target_col"],
+                    "drop_columns": ds["drop_columns"],
+                }
+            )
+
+        for damage_level in DAMAGE_LEVELS:
+            for damage_repeat in DAMAGE_REPEATS:
+                dirty_path, resolved_repeat = resolve_dirty_path(
+                    dataset_name=ds["name"],
+                    damage_level=damage_level,
+                    damage_repeat=damage_repeat,
+                )
+
+                if dirty_path is None:
+                    continue
+
+                dirty_df = load_dataset(
+                    path=dirty_path,
+                    separator="|",
+                    target_col=ds["target_col"],
+                    target_map=ds["target_map"],
+                )
+
+                print(
+                    f"  Dataset {ds['name']} | poziom {damage_level}% | "
+                    f"replika {resolved_repeat} | wierszy: {len(dirty_df)}"
+                )
+
+                for method_name in METHODS:
+                    for model_name in MODELS:
+                        tasks.append(
+                            {
+                                "Dataset": ds["name"],
+                                "PoziomUszkodzen": f"{damage_level}%",
+                                "Metoda": method_name,
+                                "Model": model_name,
+                                "DamageRepeat": resolved_repeat,
+                                "df": dirty_df,
+                                "target_col": ds["target_col"],
+                                "drop_columns": ds["drop_columns"],
+                            }
+                        )
+
+                if not os.path.exists(
+                    f"Data/{ds['name']}/{ds['name']}_prob_{damage_level}_r{damage_repeat}.csv"
+                ):
+                    break
+
+    return tasks
+
+
+def run_task(task):
+    print(
+        f"[START] {task['Dataset']} | {task['PoziomUszkodzen']} | "
+        f"{task['Metoda']} | {task['Model']} | rep={task['DamageRepeat']}"
+    )
+
+    eval_rows = evaluate_dataframe(
+        df=task["df"],
+        target_col=task["target_col"],
+        method_name=task["Metoda"],
+        model_name=task["Model"],
+        drop_columns=task["drop_columns"],
+    )
+
+    result_rows = []
+    for row in eval_rows:
+        result_rows.append(
+            {
+                "Dataset": task["Dataset"],
+                "PoziomUszkodzen": task["PoziomUszkodzen"],
+                "Metoda": task["Metoda"],
+                "Model": task["Model"],
+                "DamageRepeat": task["DamageRepeat"],
+                **row,
+            }
+        )
+
+    print(
+        f"[DONE ] {task['Dataset']} | {task['PoziomUszkodzen']} | "
+        f"{task['Metoda']} | {task['Model']} | rep={task['DamageRepeat']}"
+    )
+    return result_rows
+
+
+if __name__ == "__main__":
+    main()
