@@ -4,8 +4,10 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
+from sklearn.impute import KNNImputer
+
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 
 
 def make_one_hot_encoder():
@@ -16,8 +18,8 @@ def make_one_hot_encoder():
 
 
 class OutlierToNaNTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, numeric_columns, iqr_multiplier=3.0, min_unique=10):
-        self.numeric_columns = numeric_columns
+    def __init__(self, numeric_columns=None, iqr_multiplier=3.0, min_unique=10):
+        self.numeric_columns = numeric_columns or []
         self.iqr_multiplier = iqr_multiplier
         self.min_unique = min_unique
         self.bounds_ = {}
@@ -26,7 +28,13 @@ class OutlierToNaNTransformer(BaseEstimator, TransformerMixin):
         df = X.copy()
         self.bounds_ = {}
 
-        for col in list(self.numeric_columns):
+        cols_to_check = (
+            list(self.numeric_columns)
+            if self.numeric_columns
+            else df.select_dtypes(include=[np.number]).columns.tolist()
+        )
+
+        for col in cols_to_check:
             if col not in df.columns:
                 continue
 
@@ -60,8 +68,8 @@ class OutlierToNaNTransformer(BaseEstimator, TransformerMixin):
 
 
 class RareCategoryToNaNTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, categorical_columns, min_frequency=0.05):
-        self.categorical_columns = categorical_columns
+    def __init__(self, categorical_columns=None, min_frequency=0.05):
+        self.categorical_columns = categorical_columns or []
         self.min_frequency = min_frequency
         self.valid_categories_ = {}
 
@@ -69,11 +77,22 @@ class RareCategoryToNaNTransformer(BaseEstimator, TransformerMixin):
         df = X.copy()
         self.valid_categories_ = {}
 
-        for col in list(self.categorical_columns):
+        cols_to_check = (
+            list(self.categorical_columns)
+            if self.categorical_columns
+            else [c for c in df.columns if c not in df.select_dtypes(include=[np.number]).columns]
+        )
+
+        for col in cols_to_check:
             if col not in df.columns:
                 continue
 
-            freq = df[col].value_counts(normalize=True, dropna=True)
+            # Rzutowanie na string ujednolica kategorie zapisane liczbami (np. 0.0, 1.0, 9) i tekstami
+            series_str = df[col].dropna().astype(str)
+            if len(series_str) == 0:
+                continue
+
+            freq = series_str.value_counts(normalize=True)
             valid = set(freq[freq >= self.min_frequency].index.tolist())
             self.valid_categories_[col] = valid
 
@@ -85,69 +104,95 @@ class RareCategoryToNaNTransformer(BaseEstimator, TransformerMixin):
             if col not in df.columns or not valid_values:
                 continue
 
-            mask = df[col].notna() & ~df[col].isin(valid_values)
+            series_str = df[col].astype(str)
+            mask = df[col].notna() & ~series_str.isin(valid_values)
             df.loc[mask, col] = np.nan
 
         return df
 
 
-def build_cleaning_pipeline(X, method_name):
-    numeric_columns = X.select_dtypes(include=[np.number]).columns.tolist()
-    categorical_columns = [col for col in X.columns if col not in numeric_columns]
+def build_cleaning_pipeline(X, method_name, continuous_columns=None, categorical_columns=None):
+    if continuous_columns is not None:
+        numeric_columns = [col for col in continuous_columns if col in X.columns]
+    else:
+        numeric_columns = X.select_dtypes(include=[np.number]).columns.tolist()
+
+    if categorical_columns is not None:
+        cat_columns = [col for col in categorical_columns if col in X.columns]
+    else:
+        cat_columns = [col for col in X.columns if col not in numeric_columns]
 
     cleaning_steps = []
-    if method_name in {"remove", "remove_fill", "remove_norm", "all"}:
-        cleaning_steps.extend([
-            ("remove_outliers", OutlierToNaNTransformer(numeric_columns=numeric_columns)),
-            ("remove_rare_categories", RareCategoryToNaNTransformer(categorical_columns=categorical_columns)),
-        ])
+    if method_name in {"remove", "remove_fill", "remove_norm", "all", "all_knn"}:
+        if numeric_columns:
+            cleaning_steps.append(
+                ("remove_outliers", OutlierToNaNTransformer(numeric_columns=numeric_columns))
+            )
+        if cat_columns:
+            cleaning_steps.append(
+                ("remove_rare_categories", RareCategoryToNaNTransformer(categorical_columns=cat_columns))
+            )
 
     numeric_imputer_strategy = "constant"
     categorical_imputer_strategy = "constant"
     numeric_fill_value = -999.0
     categorical_fill_value = "MISSING"
 
-    if method_name in {"fill", "fill_norm", "remove_fill", "all"}:
+    if method_name in {"fill", "fill_norm", "remove_fill", "all", "fill_knn", "all_knn"}:
         numeric_imputer_strategy = "median"
         categorical_imputer_strategy = "most_frequent"
         numeric_fill_value = None
         categorical_fill_value = None
 
     numeric_steps = []
-    if numeric_imputer_strategy == "constant":
+    if method_name in {"fill_knn", "all_knn"}:
+        numeric_steps.append(("imputer", KNNImputer(n_neighbors=5)))
+    elif numeric_imputer_strategy == "constant":
         numeric_steps.append(
             ("imputer", SimpleImputer(strategy="constant", fill_value=numeric_fill_value))
         )
     else:
         numeric_steps.append(("imputer", SimpleImputer(strategy=numeric_imputer_strategy)))
 
-    if method_name in {"norm", "fill_norm", "remove_norm", "all"}:
+    if method_name in {"norm", "fill_norm", "remove_norm", "all", "all_knn"}:
         numeric_steps.append(("scaler", StandardScaler()))
 
-    categorical_steps = []
+    categorical_steps = [
+        ("to_obj", FunctionTransformer(lambda x: x.astype(object), validate=False)),
+    ]
     if categorical_imputer_strategy == "constant":
         categorical_steps.append(
             ("imputer", SimpleImputer(strategy="constant", fill_value=categorical_fill_value))
         )
     else:
         categorical_steps.append(("imputer", SimpleImputer(strategy=categorical_imputer_strategy)))
+
+    # Konwersja na string przed OneHotEncoder zapobiega błędowi mieszanych typów (float + str)
+    categorical_steps.append(
+        ("to_str", FunctionTransformer(lambda x: x.astype(str), validate=False))
+    )
     categorical_steps.append(("encoder", make_one_hot_encoder()))
 
     transformers = []
     if numeric_columns:
         transformers.append(("num", Pipeline(numeric_steps), numeric_columns))
-    if categorical_columns:
-        transformers.append(("cat", Pipeline(categorical_steps), categorical_columns))
+    if cat_columns:
+        transformers.append(("cat", Pipeline(categorical_steps), cat_columns))
 
     preprocessing = ColumnTransformer(transformers=transformers, remainder="drop")
 
     return Pipeline(cleaning_steps + [("preprocess", preprocessing)])
 
 
-def apply_strategy_globally(df, target_col, method_name, drop_columns=None):
+def apply_strategy_globally(df, target_col, method_name, drop_columns=None, continuous_columns=None, categorical_columns=None):
     drop_columns = drop_columns or []
     feature_df = df.drop(columns=[target_col, *drop_columns], errors="ignore")
-    prep = build_cleaning_pipeline(feature_df, method_name)
+    prep = build_cleaning_pipeline(
+        feature_df,
+        method_name,
+        continuous_columns=continuous_columns,
+        categorical_columns=categorical_columns,
+    )
     transformed = prep.fit_transform(feature_df)
 
     feature_names = prep.named_steps["preprocess"].get_feature_names_out()

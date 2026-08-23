@@ -8,15 +8,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from config import DATASETS_ALL
 from Src.cleaning_methods import apply_strategy_globally
 
 
-DATASETS = [
-    {"name": "zapalenia", "target": "Zgon", "drop_columns": ["Kod"]},
-    {"name": "diabetes", "target": "decision", "drop_columns": []},
-    {"name": "serce", "target": "diagnoza", "drop_columns": []},
-    {"name": "rezygnacje", "target": "REZYGN", "drop_columns": ["NR_TEL"]},
-]
+DATASETS = DATASETS_ALL
 
 METHODS = [
     ("norm", "1_norm"),
@@ -62,9 +58,11 @@ def main():
                 for method_name, suffix in METHODS:
                     cleaned_df = apply_strategy_globally(
                         df=df,
-                        target_col=dataset["target"],
+                        target_col=dataset["target_col"],
                         method_name=method_name,
-                        drop_columns=dataset["drop_columns"],
+                        drop_columns=dataset.get("drop_columns"),
+                        continuous_columns=dataset.get("continuous_columns"),
+                        categorical_columns=dataset.get("categorical_columns"),
                     )
                     output_path = f"{prefix}_{suffix}.csv"
                     cleaned_df.to_csv(output_path, sep="|", index=False)
