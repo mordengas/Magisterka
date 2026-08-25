@@ -62,6 +62,17 @@ DATASETS_CONFIG = {
         ],
         "separator": ",",
     },
+    "kredyty.tab": {
+        "folder": "kredyty",
+        "target": "Kredyt",
+        "protected": ["Kredyt"],
+        "continuous": [
+            "Czas_trwania_konta",
+            "Kwota_kredytu",
+            "Wiek",
+        ],
+        "separator": r"\s+",
+    },
 }
 
 DAMAGE_LEVELS = [0.20, 0.40, 0.60]
@@ -113,7 +124,10 @@ def inject_categorical_noise(df_dirty, categorical_columns, damage_level, rng):
 
         noise_count = max(1, int(len(valid_indices) * damage_level))
         selected_indices = rng.choice(valid_indices, size=noise_count, replace=False)
-        df_dirty.loc[selected_indices, col] = 9
+        if pd.api.types.is_numeric_dtype(df_dirty[col]):
+            df_dirty.loc[selected_indices, col] = 9
+        else:
+            df_dirty.loc[selected_indices, col] = "9"
 
 
 def generate_dirty_dataset(filename, config, damage_level, repeat_no):
@@ -134,7 +148,7 @@ def generate_dirty_dataset(filename, config, damage_level, repeat_no):
     inject_continuous_outliers(df_dirty, continuous_columns, damage_level, rng)
     inject_categorical_noise(df_dirty, categorical_columns, damage_level, rng)
 
-    base_name = "zapalenia" if "zapalenia" in filename else filename.replace(".csv", "")
+    base_name = config["folder"]
     output_name = f"{base_name}_prob_{int(damage_level * 100)}_r{repeat_no}.csv"
     output_path = os.path.join(save_dir, output_name)
 

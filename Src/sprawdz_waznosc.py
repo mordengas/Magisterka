@@ -8,7 +8,9 @@ import os
 DATASETS = [
     {'plik': 'zapalenia_naczyn.csv', 'cel': 'Zgon', 'sep': '|', 'mapa': None},
     {'plik': 'diabetes.csv', 'cel': 'decision', 'sep': ',', 'mapa': {'tested_negative': 0, 'tested_positive': 1}},
-    {'plik': 'serce.csv', 'cel': 'diagnoza', 'sep': ',', 'mapa': {1: 0, 2: 1}}
+    {'plik': 'serce.csv', 'cel': 'diagnoza', 'sep': ',', 'mapa': {1: 0, 2: 1}},
+    {'plik': 'rezygnacje.csv', 'cel': 'REZYGN', 'sep': ',', 'mapa': None},
+    {'plik': 'kredyty.tab', 'cel': 'Kredyt', 'sep': r'\s+', 'mapa': {'good': 0, 'bad': 1}},
 ]
 
 print("=== RANKING NAJWAŻNIEJSZYCH ZMIENNYCH ===\n")

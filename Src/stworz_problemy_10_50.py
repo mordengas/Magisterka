@@ -5,6 +5,29 @@ import pandas as pd
 
 
 DATASETS_CONFIG = {
+    "zapalenia_naczyn.csv": {
+        "folder": "zapalenia",
+        "target": "Zgon",
+        "protected": ["Kod", "Zgon"],
+        "continuous": [
+            "Wiek",
+            "Wiek_rozpoznania",
+            "Opoznienie_Rozpoznia",
+            "Paczkolata",
+            "Liczba_Zajetych_Narzadow",
+            "Liczba_Zaostrzen ",
+            "Czas_Pierwsze_Zaostrzenie",
+            "Kreatynina",
+            "Max_CRP",
+            "Sterydy_Dawka_g",
+            "Sterydy_Dawka_mg",
+            "Czas_Sterydow",
+            "Anti-PR3_Wartosc",
+            "Anti-MPO_Wartosc",
+            "Eozynofilia_Krwi_Obwodowej_Wartosc",
+        ],
+        "separator": "|",
+    },
     "diabetes.csv": {
         "folder": "diabetes",
         "target": "decision",
@@ -47,6 +70,17 @@ DATASETS_CONFIG = {
             "L_POL_BIURO",
         ],
         "separator": ",",
+    },
+    "kredyty.tab": {
+        "folder": "kredyty",
+        "target": "Kredyt",
+        "protected": ["Kredyt"],
+        "continuous": [
+            "Czas_trwania_konta",
+            "Kwota_kredytu",
+            "Wiek",
+        ],
+        "separator": r"\s+",
     },
 }
 
@@ -97,7 +131,10 @@ def inject_categorical_noise(df_dirty, categorical_columns, damage_level, rng):
 
         noise_count = max(1, int(len(valid_indices) * max(0.05, damage_level * 0.8)))
         selected_indices = rng.choice(valid_indices, size=noise_count, replace=False)
-        df_dirty.loc[selected_indices, col] = 9
+        if pd.api.types.is_numeric_dtype(df_dirty[col]):
+            df_dirty.loc[selected_indices, col] = 9
+        else:
+            df_dirty.loc[selected_indices, col] = "9"
 
 
 def generate_dirty_dataset(filename, config, damage_level, repeat_no):
@@ -118,7 +155,7 @@ def generate_dirty_dataset(filename, config, damage_level, repeat_no):
     inject_continuous_outliers(df_dirty, continuous_columns, damage_level, rng)
     inject_categorical_noise(df_dirty, categorical_columns, damage_level, rng)
 
-    base_name = filename.replace(".csv", "")
+    base_name = config["folder"]
     output_name = f"{base_name}_10_50_prob_{int(damage_level * 100)}_r{repeat_no}.csv"
     output_path = os.path.join(save_dir, output_name)
 

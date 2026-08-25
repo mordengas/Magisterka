@@ -144,7 +144,9 @@ def build_cleaning_pipeline(X, method_name, continuous_columns=None, categorical
         numeric_fill_value = None
         categorical_fill_value = None
 
-    numeric_steps = []
+    numeric_steps = [
+        ("to_float", FunctionTransformer(lambda x: x.astype(float), validate=False)),
+    ]
     if method_name in {"fill_knn", "all_knn"}:
         numeric_steps.append(("imputer", KNNImputer(n_neighbors=5)))
     elif numeric_imputer_strategy == "constant":

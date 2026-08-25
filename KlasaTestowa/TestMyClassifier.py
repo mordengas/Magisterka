@@ -45,7 +45,9 @@ def get_estimator(model_name, random_state):
     if model_name == "MLP":
         return MLPClassifier(
             hidden_layer_sizes=(100,),
-            max_iter=1600,
+            max_iter=500,
+            early_stopping=True,
+            n_iter_no_change=15,
             random_state=random_state,
         )
 

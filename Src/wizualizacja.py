@@ -90,7 +90,19 @@ def save_dataset_plots(dataframe):
         df_base = baseline[baseline["Dataset"] == dataset_name]
         y_min, y_max = get_ylim_range(df_ds, df_base=df_base, custom_min=args.ylim_min, custom_max=args.ylim_max)
 
-        method_order = sorted(df_ds["Metoda"].unique())
+        if not df_base.empty:
+            orig_rows = []
+            for lvl in df_ds["PoziomUszkodzen"].unique():
+                for _, r in df_base.iterrows():
+                    item = r.to_dict()
+                    item["PoziomUszkodzen"] = lvl
+                    item["Metoda"] = "original"
+                    orig_rows.append(item)
+            df_ds = pd.concat([df_ds, pd.DataFrame(orig_rows)], ignore_index=True)
+
+        other_methods = sorted([m for m in df_ds["Metoda"].unique() if m not in ("original", "raw")])
+        method_order = [m for m in ["original", "raw"] if m in df_ds["Metoda"].unique()] + other_methods
+        col_order = sorted(df_ds["PoziomUszkodzen"].unique(), key=lambda value: int(value.replace("%", "")))
         g = sns.catplot(
             data=df_ds,
             kind="bar",
@@ -99,7 +111,7 @@ def save_dataset_plots(dataframe):
             hue="Model",
             col="PoziomUszkodzen",
             order=method_order,
-            col_order=sorted(df_ds["PoziomUszkodzen"].unique(), key=lambda value: int(value.replace("%", ""))),
+            col_order=col_order,
             hue_order=available_models,
             palette=palette,
             errorbar=None,
@@ -109,12 +121,17 @@ def save_dataset_plots(dataframe):
             legend_out=True,
         )
 
-        for ax, (_, facet_df) in zip(g.axes.flat, df_ds.groupby("PoziomUszkodzen", sort=True)):
-            facet_df = facet_df.copy()
+        for ax, level in zip(g.axes.flat, col_order):
+            facet_df = df_ds[df_ds["PoziomUszkodzen"] == level].copy()
             facet_df["Metoda"] = pd.Categorical(facet_df["Metoda"], categories=method_order, ordered=True)
             facet_df["Model"] = pd.Categorical(facet_df["Model"], categories=available_models, ordered=True)
             facet_df = facet_df.sort_values(["Metoda", "Model"])
-            for patch, (_, row) in zip(ax.patches, facet_df.iterrows()):
+
+            # Sortujemy słupki od lewej do prawej, aby idealnie odpowiadały posortowanym wierszom facet_df
+            patches = [p for p in ax.patches if p.get_width() > 0 and p.get_height() > 0]
+            patches = sorted(patches, key=lambda p: p.get_x())
+
+            for patch, (_, row) in zip(patches, facet_df.iterrows()):
                 center_x = patch.get_x() + patch.get_width() / 2
                 ax.errorbar(
                     x=center_x,

@@ -117,6 +117,28 @@ DATASETS_ALL = [
             "POCZTA_G",
         ],
     },
+    {
+        "name": "kredyty",
+        "original_file": "Data/kredyty.tab",
+        "target_col": "Kredyt",
+        "separator": r"\s+",
+        "target_map": {"good": 0, "bad": 1},
+        "drop_columns": [],
+        "continuous_columns": [
+            "Czas_trwania_konta",
+            "Kwota_kredytu",
+            "Wiek",
+        ],
+        "categorical_columns": [
+            "Cel_kredytu",
+            "Czas_zatrudnienia",
+            "Plec_i_stan_cywilny",
+            "Czas_od_zamieszkania",
+            "Liczba_kredytow_w_banku",
+            "Praca",
+            "Liczb_osob_na_utrzymaniu",
+        ],
+    },
 ]
 
 DATASETS_NO_ZAPALENIA = [ds for ds in DATASETS_ALL if ds["name"] != "zapalenia"]
@@ -134,7 +156,7 @@ EXPERIMENT_PROFILES = {
         "dirty_file_pattern": "{name}_prob_{level}_r{repeat}.csv",
     },
     "10_50": {
-        "datasets": DATASETS_NO_ZAPALENIA,
+        "datasets": DATASETS_ALL,
         "methods": ["raw", "fill", "remove_fill", "fill_norm", "all", "fill_knn", "all_knn"],
         "models": ["RF", "NB", "MLP", "XGBoost"],
         "damage_levels": [10, 20, 30, 40, 50],
@@ -157,4 +179,4 @@ EXPERIMENT_PROFILES = {
     },
 }
 
-PARALLEL_JOBS = max(1, min(8, (os.cpu_count() or 4) - 2))
+PARALLEL_JOBS = max(1, (os.cpu_count() or 4) - 2)

@@ -9,6 +9,7 @@ SCRIPTS = [
     (PROJECT_ROOT / "Src" / "stworz_problemy_10_50.py", []),
     (PROJECT_ROOT / "KlasaTestowa" / "TestMyClassifier.py", ["--profile", "10_50"]),
     (PROJECT_ROOT / "Src" / "wizualizacja.py", ["--profile", "10_50"]),
+    (PROJECT_ROOT / "Src" / "testy_statystyczne.py", ["--profile", "10_50"]),
 ]
 
 def run_script(script_path, extra_args=None):
