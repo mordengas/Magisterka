@@ -11,6 +11,18 @@ diabetes,XGBoost,raw,all,12,9.0,0.016113,TAK,Wilcoxon,,
 diabetes,XGBoost,raw,fill,12,22.0,0.203613,NIE,Wilcoxon,,
 diabetes,XGBoost,raw,fill_norm,12,22.0,0.203613,NIE,Wilcoxon,,
 diabetes,XGBoost,raw,remove_fill,12,9.0,0.016113,TAK,Wilcoxon,,
+kredyty,NB,raw,all,12,20.0,0.151367,NIE,Wilcoxon,,
+kredyty,NB,raw,fill,12,17.0,0.092285,NIE,Wilcoxon,,
+kredyty,NB,raw,fill_norm,12,22.0,0.203613,NIE,Wilcoxon,,
+kredyty,NB,raw,remove_fill,12,29.0,0.469727,NIE,Wilcoxon,,
+kredyty,RF,raw,all,12,17.0,0.092285,NIE,Wilcoxon,,
+kredyty,RF,raw,fill,12,25.0,0.30127,NIE,Wilcoxon,,
+kredyty,RF,raw,fill_norm,12,25.0,0.30127,NIE,Wilcoxon,,
+kredyty,RF,raw,remove_fill,12,17.0,0.092285,NIE,Wilcoxon,,
+kredyty,XGBoost,raw,all,12,29.5,0.482422,NIE,Wilcoxon,,
+kredyty,XGBoost,raw,fill,12,20.0,0.151367,NIE,Wilcoxon,,
+kredyty,XGBoost,raw,fill_norm,12,20.0,0.151367,NIE,Wilcoxon,,
+kredyty,XGBoost,raw,remove_fill,12,29.5,0.482422,NIE,Wilcoxon,,
 rezygnacje,NB,raw,all,12,16.0,0.077148,NIE,Wilcoxon,,
 rezygnacje,NB,raw,fill,12,21.0,0.17627,NIE,Wilcoxon,,
 rezygnacje,NB,raw,fill_norm,12,0.0,0.000488,TAK,Wilcoxon,,
@@ -50,6 +62,9 @@ zapalenia,XGBoost,raw,remove_fill,12,4.0,0.003418,TAK,Wilcoxon,,
 diabetes,NB,,,12,5.1378,0.273451,NIE,Friedman,5.0,"all, fill, fill_norm, raw, remove_fill"
 diabetes,RF,,,12,6.6,0.158598,NIE,Friedman,5.0,"all, fill, fill_norm, raw, remove_fill"
 diabetes,XGBoost,,,12,10.3704,0.03463,TAK,Friedman,5.0,"all, fill, fill_norm, raw, remove_fill"
+kredyty,NB,,,12,2.3333,0.674707,NIE,Friedman,5.0,"all, fill, fill_norm, raw, remove_fill"
+kredyty,RF,,,12,3.9325,0.41522,NIE,Friedman,5.0,"all, fill, fill_norm, raw, remove_fill"
+kredyty,XGBoost,,,12,4.4444,0.349186,NIE,Friedman,5.0,"all, fill, fill_norm, raw, remove_fill"
 rezygnacje,NB,,,12,26.0422,3.1e-05,TAK,Friedman,5.0,"all, fill, fill_norm, raw, remove_fill"
 rezygnacje,RF,,,12,13.8824,0.00768,TAK,Friedman,5.0,"all, fill, fill_norm, raw, remove_fill"
 rezygnacje,XGBoost,,,12,2.0741,0.722137,NIE,Friedman,5.0,"all, fill, fill_norm, raw, remove_fill"
