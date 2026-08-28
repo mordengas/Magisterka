@@ -1,0 +1,32 @@
+\begin{table}[htbp]
+\caption{Średnie wartości AUC $\pm$ odchylenie standardowe dla zbioru \textbf{Zapalenia}}
+\label{tab:wyniki_zapalenia}
+\begin{tabular}{llccc}
+\toprule
+ &  & RF & NB & XGBoost \\
+Uszkodzenie & Metoda &  &  &  \\
+\midrule
+\multirow[t]{2}{*}{ORYGINALNY} & original & - & - & - \\
+ & raw & 0.932 $\pm$ 0.013 & 0.871 $\pm$ 0.000 & 0.937 $\pm$ 0.004 \\
+\cline{1-5}
+\multirow[t]{5}{*}{20%} & raw & \textbf{0.889 $\pm$ 0.005} & 0.634 $\pm$ 0.010 & \textbf{0.886 $\pm$ 0.020} \\
+ & fill & 0.885 $\pm$ 0.009 & 0.633 $\pm$ 0.010 & 0.876 $\pm$ 0.015 \\
+ & remove_fill & 0.871 $\pm$ 0.011 & 0.767 $\pm$ 0.012 & 0.859 $\pm$ 0.007 \\
+ & fill_norm & 0.885 $\pm$ 0.009 & 0.581 $\pm$ 0.006 & 0.876 $\pm$ 0.015 \\
+ & all & 0.871 $\pm$ 0.011 & \textbf{0.811 $\pm$ 0.015} & 0.859 $\pm$ 0.007 \\
+\cline{1-5}
+\multirow[t]{5}{*}{40%} & raw & 0.831 $\pm$ 0.021 & 0.610 $\pm$ 0.060 & 0.794 $\pm$ 0.027 \\
+ & fill & 0.845 $\pm$ 0.009 & 0.611 $\pm$ 0.061 & \textbf{0.811 $\pm$ 0.018} \\
+ & remove_fill & 0.806 $\pm$ 0.014 & 0.603 $\pm$ 0.015 & 0.800 $\pm$ 0.013 \\
+ & fill_norm & \textbf{0.845 $\pm$ 0.009} & 0.561 $\pm$ 0.026 & \textbf{0.811 $\pm$ 0.018} \\
+ & all & 0.806 $\pm$ 0.014 & \textbf{0.774 $\pm$ 0.019} & 0.800 $\pm$ 0.013 \\
+\cline{1-5}
+\multirow[t]{5}{*}{60%} & raw & 0.779 $\pm$ 0.012 & 0.604 $\pm$ 0.051 & 0.699 $\pm$ 0.047 \\
+ & fill & 0.799 $\pm$ 0.023 & 0.605 $\pm$ 0.052 & \textbf{0.769 $\pm$ 0.019} \\
+ & remove_fill & 0.710 $\pm$ 0.026 & 0.546 $\pm$ 0.034 & 0.751 $\pm$ 0.021 \\
+ & fill_norm & \textbf{0.800 $\pm$ 0.023} & 0.560 $\pm$ 0.026 & \textbf{0.769 $\pm$ 0.019} \\
+ & all & 0.710 $\pm$ 0.026 & \textbf{0.697 $\pm$ 0.020} & 0.751 $\pm$ 0.021 \\
+\cline{1-5}
+\bottomrule
+\end{tabular}
+\end{table}

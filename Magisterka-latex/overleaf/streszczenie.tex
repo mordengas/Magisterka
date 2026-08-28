@@ -1,0 +1,25 @@
+\chapter*{STRESZCZENIE}
+\addcontentsline{toc}{chapter}{\protect\hspace{0.45cm} STRESZCZENIE}
+
+\noindent \textbf{Tytuł pracy w języku polskim:}\\
+Wpływ metod czyszczenia danych na jakość klasyfikatorów
+
+\vspace{0.4cm}
+\noindent \textbf{Tytuł pracy w języku angielskim:}\\
+Impact of Data Cleaning Methods on Classifier Performance
+
+\vspace{0.4cm}
+\noindent \textbf{Streszczenie:}\\
+Niniejsza praca magisterska poświęcona jest kompleksowej analizie wpływu metod wstępnego przetwarzania i czyszczenia danych tabelarycznych na skuteczność oraz stabilność wybranych modeli uczenia maszynowego. W pracy zbadano techniki identyfikacji i eliminacji wartości odstających oparte na regule rozstępu międzykwartylowego (IQR), metody jedno- i wielowymiarowej imputacji brakujących danych (mediana oraz $k$-najbliższych sąsiadów) oraz procedury standaryzacji cech $z$-score i kodowania zmiennych kategorycznych. Badania empiryczne przeprowadzono na pięciu zróżnicowanych zbiorach danych (Zapalenia naczyń, Choroby serca, Cukrzyca, Rezygnacje klientów oraz Ryzyko kredytowe) poddanych kontrolowanej degradacji jakości w zakresie od 10\% do 50\%. Ewaluację wykonano dla czterech rodzin klasyfikatorów: Naiwnego Klasyfikatora Bayesa, Perceptronu Wielowarstwowego (MLP), Lasów Losowych oraz XGBoost, mierząc pole pod krzywą ROC (AUC) w procedurze wielokrotnej stratyfikowanej walidacji krzyżowej. Istotność statystyczną obserwowanych różnic zweryfikowano testami rangowymi Wilcoxona i Friedmana.
+
+\vspace{0.4cm}
+\noindent \textbf{Słowa kluczowe:}\\
+czyszczenie danych, uczenie maszynowe, klasyfikacja tabelaryczna, imputacja braków danych, wartości odstające, standaryzacja, walidacja krzyżowa, AUC, Random Forest, XGBoost, MLP, Gaussian Naive Bayes.
+
+\vspace{0.8cm}
+\noindent \textbf{Abstract:}\\
+This master's thesis investigates the impact of tabular data preprocessing and cleaning techniques on the predictive performance and stability of machine learning classification models. The study evaluates outlier detection and handling methods based on the interquartile range (IQR) rule, uni- and multidimensional missing value imputation strategies (median and $k$-Nearest Neighbors), and numerical feature standardization alongside categorical encoding. Empirical experiments were conducted on five diverse benchmark datasets (Systemic Vasculitis, Heart Disease, Diabetes, Customer Churn, and German Credit) subjected to controlled data corruption levels ranging from 10\% to 50\%. Four distinct classifier families were evaluated: Gaussian Naive Bayes, Multilayer Perceptron (MLP), Random Forest, and XGBoost, measuring the Area Under the ROC Curve (AUC) across repeated stratified cross-validation folds. The statistical significance of performance gains was formally verified using Wilcoxon signed-rank and Friedman tests.
+
+\vspace{0.4cm}
+\noindent \textbf{Keywords:}\\
+data cleaning, machine learning, tabular classification, missing value imputation, outlier detection, standardization, cross-validation, AUC, Random Forest, XGBoost, MLP, Gaussian Naive Bayes.

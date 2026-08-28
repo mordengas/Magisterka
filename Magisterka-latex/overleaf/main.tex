@@ -1,0 +1,155 @@
+\documentclass[12pt,a4paper,twoside,openright]{book}
+
+% ==============================================================================
+% PAKIETY JĘZYKOWE I CZCIONKA CALIBRI (Kompatybilność z Overleaf / pdfLaTeX / XeLaTeX)
+% ==============================================================================
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{polski}
+  % Carlito to darmowy, oficjalny i w 100% zgodny metrycznie odpowiednik Calibri dla pdfLaTeX
+  \IfFileExists{carlito.sty}{
+    \usepackage[scaled=1.0]{carlito}
+  }{
+    \usepackage{lmodern}
+  }
+  \renewcommand{\familydefault}{\sfdefault}
+\else
+  \usepackage{fontspec}
+  \usepackage{polski}
+  \IfFontExistsTF{Calibri}{
+    \setmainfont{Calibri}
+    \setsansfont{Calibri}
+  }{
+    \IfFontExistsTF{Carlito}{
+      \setmainfont{Carlito}
+      \setsansfont{Carlito}
+    }{
+      \setmainfont{DejaVu Sans}
+    }
+  }
+  \renewcommand{\familydefault}{\sfdefault}
+\fi
+
+% ==============================================================================
+% UKŁAD STRONY I MARGINESY (Wymogi uczelniane: A4, dwustronny, margines wewn. 3.5cm, zewn. 2.5cm, góra/dół 2.5cm)
+% ==============================================================================
+\usepackage[
+  a4paper,
+  twoside,
+  top=2.5cm,
+  bottom=2.5cm,
+  inner=3.5cm,
+  outer=2.5cm,
+  headheight=15pt
+]{geometry}
+
+% Interlinia 1.5 wiersza
+\usepackage{setspace}
+\onehalfspacing
+
+% Wcięcie pierwszego akapitu na 1.0 cm
+\usepackage{indentfirst}
+\setlength{\parindent}{1.0cm}
+
+% Zapobieganie błędom łamania wierszy i "sierotkom"
+\brokenpenalty=10000
+\clubpenalty=10000
+\widowpenalty=10000
+\sloppy
+
+% ==============================================================================
+% FORMATOWANIE TYTUŁÓW (Wymóg: w tytułach rozdziałów i podrozdziałów czcionka pogrubiona)
+% ==============================================================================
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\sffamily}{\chaptertitlename\ \thechapter}{20pt}{\Huge\bfseries\sffamily}
+\titleformat{\section}
+  {\normalfont\Large\bfseries\sffamily}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\sffamily}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\sffamily}{\thesubsubsection}{1em}{}
+
+% ==============================================================================
+% PAKIETY MATEMATYCZNE, GRAFICZNE I TABELE
+% ==============================================================================
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{color}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{lipsum}
+
+% ==============================================================================
+% LINKI I ADRESY URL
+% ==============================================================================
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-\do_\do.\do=\do\&}
+\usepackage[hidelinks,pdfusetitle]{hyperref}
+
+% ==============================================================================
+% OTOCZENIA MATEMATYCZNE I DEFINICJE
+% ==============================================================================
+\newtheorem{tw}{{\sf Twierdzenie}}[chapter]
+\newtheorem{lem}[tw]{{\sf Lemat}}
+\newtheorem{wn}[tw]{{\sf Wniosek}}
+\newtheorem{wl}[tw]{\sf Własność}
+
+\theoremstyle{definition}
+\newtheorem{deff}[tw]{{\sf Definicja}}
+\newtheorem{pr}[tw]{{\sf Problem}}
+\newtheorem{przykl}[tw]{{\sf Przykład}}
+\newtheorem{uw}[tw]{{\sf Uwaga}}
+\renewcommand{\theequation}{{\thechapter}.\arabic{equation}}
+
+% Głębokość numeracji w spisie treści
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{2}
+\def\thefootnote{\arabic{footnote})}
+
+% ==============================================================================
+% DOKUMENT GŁÓWNY
+% ==============================================================================
+\begin{document}
+
+% 1. Strona tytułowa (bez numeracji)
+\pagenumbering{gobble}
+\input{strona_tytulowa.tex}
+
+% 2. Spis treści
+\pagestyle{plain}
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\cleardoublepage
+
+% 3. Właściwa część pracy (numeracja arabska)
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{wstep.tex}
+\input{rozdzial1_wprowadzenie.tex}
+\input{rozdzial2_teoria.tex}
+\input{rozdzial3_srodowisko_i_dane.tex}
+\input{rozdzial4_wyniki.tex}
+\input{rozdzial5_podsumowanie.tex}
+\input{zakonczenie.tex}
+
+% 4. Bibliografia i Streszczenie
+\newpage
+\cleardoublepage
+\input{literatura.tex}
+
+\newpage
+\cleardoublepage
+\input{streszczenie.tex}
+
+\end{document}

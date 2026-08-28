@@ -1,0 +1,64 @@
+# Wyniki testu Wilcoxona (Metoda vs RAW)
+
+| Zbiór      | Model   | Metoda      |   n |   Statystyka W |   p-value | Istotność   |
+|:-----------|:--------|:------------|----:|---------------:|----------:|:------------|
+| diabetes   | NB      | all         |  12 |           28   |    0.4238 | NIE         |
+| diabetes   | NB      | fill        |  12 |           13   |    0.041  | **TAK ***   |
+| diabetes   | NB      | fill_norm   |  12 |           13   |    0.041  | **TAK ***   |
+| diabetes   | NB      | remove_fill |  12 |           28   |    0.4238 | NIE         |
+| diabetes   | RF      | all         |  12 |           22   |    0.2036 | NIE         |
+| diabetes   | RF      | fill        |  12 |           27   |    0.3804 | NIE         |
+| diabetes   | RF      | fill_norm   |  12 |           27   |    0.3804 | NIE         |
+| diabetes   | RF      | remove_fill |  12 |           22   |    0.2036 | NIE         |
+| diabetes   | XGBoost | all         |  12 |           31   |    0.5693 | NIE         |
+| diabetes   | XGBoost | fill        |  12 |           36   |    0.8501 | NIE         |
+| diabetes   | XGBoost | fill_norm   |  12 |           36   |    0.8501 | NIE         |
+| diabetes   | XGBoost | remove_fill |  12 |           31   |    0.5693 | NIE         |
+| kredyty    | NB      | all         |  12 |           20   |    0.1514 | NIE         |
+| kredyty    | NB      | fill        |  12 |           15   |    0.0615 | NIE         |
+| kredyty    | NB      | fill_norm   |  12 |           19   |    0.1294 | NIE         |
+| kredyty    | NB      | remove_fill |  12 |           24   |    0.2661 | NIE         |
+| kredyty    | RF      | all         |  12 |           14   |    0.0522 | NIE         |
+| kredyty    | RF      | fill        |  12 |           24   |    0.2661 | NIE         |
+| kredyty    | RF      | fill_norm   |  12 |           25   |    0.3013 | NIE         |
+| kredyty    | RF      | remove_fill |  12 |           14   |    0.0522 | NIE         |
+| kredyty    | XGBoost | all         |  12 |           35   |    0.791  | NIE         |
+| kredyty    | XGBoost | fill        |  12 |           20   |    0.1514 | NIE         |
+| kredyty    | XGBoost | fill_norm   |  12 |           20   |    0.1514 | NIE         |
+| kredyty    | XGBoost | remove_fill |  12 |           35   |    0.791  | NIE         |
+| rezygnacje | NB      | all         |  12 |           30   |    0.5186 | NIE         |
+| rezygnacje | NB      | fill        |  12 |           25   |    0.3013 | NIE         |
+| rezygnacje | NB      | fill_norm   |  12 |            0   |    0.0005 | **TAK ***** |
+| rezygnacje | NB      | remove_fill |  12 |           30   |    0.5186 | NIE         |
+| rezygnacje | RF      | all         |  12 |           27   |    0.3804 | NIE         |
+| rezygnacje | RF      | fill        |  12 |            8   |    0.0122 | **TAK ***   |
+| rezygnacje | RF      | fill_norm   |  12 |            8   |    0.0122 | **TAK ***   |
+| rezygnacje | RF      | remove_fill |  12 |           27   |    0.3804 | NIE         |
+| rezygnacje | XGBoost | all         |  12 |           31.5 |    0.583  | NIE         |
+| rezygnacje | XGBoost | fill        |  12 |           37   |    0.9097 | NIE         |
+| rezygnacje | XGBoost | fill_norm   |  12 |           37   |    0.9097 | NIE         |
+| rezygnacje | XGBoost | remove_fill |  12 |           31.5 |    0.583  | NIE         |
+| serce      | NB      | all         |  12 |           36   |    0.8501 | NIE         |
+| serce      | NB      | fill        |  12 |           17   |    0.0923 | NIE         |
+| serce      | NB      | fill_norm   |  12 |           12   |    0.0342 | **TAK ***   |
+| serce      | NB      | remove_fill |  12 |           25   |    0.2925 | NIE         |
+| serce      | RF      | all         |  12 |           23   |    0.2334 | NIE         |
+| serce      | RF      | fill        |  12 |           29   |    0.4697 | NIE         |
+| serce      | RF      | fill_norm   |  12 |           28   |    0.4238 | NIE         |
+| serce      | RF      | remove_fill |  12 |           25   |    0.2925 | NIE         |
+| serce      | XGBoost | all         |  12 |           22   |    0.2036 | NIE         |
+| serce      | XGBoost | fill        |  12 |           19   |    0.1294 | NIE         |
+| serce      | XGBoost | fill_norm   |  12 |           19   |    0.1294 | NIE         |
+| serce      | XGBoost | remove_fill |  12 |           22   |    0.2036 | NIE         |
+| zapalenia  | NB      | all         |  12 |            0   |    0.0005 | **TAK ***** |
+| zapalenia  | NB      | fill        |  12 |           36   |    0.8335 | NIE         |
+| zapalenia  | NB      | fill_norm   |  12 |            2   |    0.0015 | **TAK ****  |
+| zapalenia  | NB      | remove_fill |  12 |           29   |    0.4697 | NIE         |
+| zapalenia  | RF      | all         |  12 |            0   |    0.0005 | **TAK ***** |
+| zapalenia  | RF      | fill        |  12 |           16   |    0.0771 | NIE         |
+| zapalenia  | RF      | fill_norm   |  12 |           16   |    0.0771 | NIE         |
+| zapalenia  | RF      | remove_fill |  12 |            0   |    0.0005 | **TAK ***** |
+| zapalenia  | XGBoost | all         |  12 |           30   |    0.5186 | NIE         |
+| zapalenia  | XGBoost | fill        |  12 |           17   |    0.0923 | NIE         |
+| zapalenia  | XGBoost | fill_norm   |  12 |           17   |    0.0923 | NIE         |
+| zapalenia  | XGBoost | remove_fill |  12 |           30   |    0.5186 | NIE         |

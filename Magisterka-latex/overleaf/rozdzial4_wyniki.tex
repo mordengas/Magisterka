@@ -1,0 +1,321 @@
+\chapter{Wyniki eksperymentów}
+
+W niniejszym rozdziale przedstawiono szczegółowe rezultaty przeprowadzonych badań empirycznych, których celem była ocena wpływu 7 strategii czyszczenia danych na jakość i stabilność czterech architektur klasyfikatorów (Random Forest, XGBoost, Gaussian Naive Bayes, MLP). Eksperymenty zrealizowano na 5 zbiorach danych poddanych kontrolowanej degradacji jakości na pięciu poziomach uszkodzeń ($10\%, 20\%, 30\%, 40\%, 50\%$) w procedurze wielokrotnej stratyfikowanej walidacji krzyżowej.
+
+Główną miarą oceny jakości predykcji jest pole pod krzywą ROC ($\overline{\mathrm{AUC}}$) wraz z odchyleniem standardowym $\sigma_{\mathrm{AUC}}$, a także zysk predykcyjny definiowany jako różnica względem danych nieoczyszczonych:
+\begin{equation}
+\Delta \mathrm{AUC} = \overline{\mathrm{AUC}}_{\text{metoda}} - \overline{\mathrm{AUC}}_{\text{raw}}.
+\end{equation}
+
+\section{Wyniki bazowe i ogólna charakterystyka odporności modeli}
+W tabeli~\ref{tab:wyniki_bazowe} zestawiono wyniki bazowe uzyskane na oryginalnych (czystych) zbiorach danych, stanowiące górną granicę skuteczności dla każdego z modeli.
+
+\begin{table}[H]
+\centering
+\caption{Skuteczność klasyfikatorów ($\overline{\mathrm{AUC}} \pm \sigma_{\mathrm{AUC}}$) na oryginalnych zbiorach danych}
+\label{tab:wyniki_bazowe}
+\vspace{0.2cm}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Zbiór danych} & \textbf{Random Forest (RF)} & \textbf{XGBoost} & \textbf{Gaussian NB} & \textbf{MLP (Sieć neuronowa)} \\
+\midrule
+Zapalenia naczyń      & $\mathbf{0{,}9391 \pm 0{,}005}$ & $0{,}9363 \pm 0{,}004$ & $0{,}8721 \pm 0{,}003$ & $0{,}7407 \pm 0{,}020$ \\
+Serce (Heart)         & $\mathbf{0{,}9075 \pm 0{,}010}$ & $0{,}8912 \pm 0{,}010$ & $0{,}8872 \pm 0{,}007$ & $0{,}6132 \pm 0{,}134$ \\
+Cukrzyca (Diabetes)   & $\mathbf{0{,}8302 \pm 0{,}001}$ & $0{,}8165 \pm 0{,}000$ & $0{,}8149 \pm 0{,}001$ & $0{,}6395 \pm 0{,}040$ \\
+Rezygnacje (Churn)    & $0{,}9143 \pm 0{,}003$ & $\mathbf{0{,}9165 \pm 0{,}004}$ & $0{,}6527 \pm 0{,}007$ & $0{,}6874 \pm 0{,}145$ \\
+Kredyty (German)      & $\mathbf{0{,}6839 \pm 0{,}003}$ & $0{,}6828 \pm 0{,}011$ & $0{,}6316 \pm 0{,}005$ & $0{,}4590 \pm 0{,}013$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+Najwyższą jakość predykcyjną na czystych danych osiągają modele zespołowe (Random Forest oraz XGBoost), uzyskując na zbiorach medycznych $\overline{\mathrm{AUC}} > 0{,}90$. Naiwny Klasyfikator Bayesa wykazuje stabilne rezultaty rzędu $0{,}81 - 0{,}88$ na danych medycznych, jednak radzi sobie słabiej w zadaniach o silnych interakcjach nieliniowych (np. zbiór \textit{Rezygnacje}). Z kolei sieć MLP bez zaawansowanego strojenia hiperparametrów osiąga najniższe wartości bazowe oraz charakteryzuje się podwyższoną wariancją wyników ($\sigma_{\mathrm{AUC}}$ do $0{,}145$).
+
+Ogólną dynamikę spadku jakości modeli pod wpływem degradacji danych przedstawiono na rysunku~\ref{fig:krzywe_zbiorcze}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_Zaawansowane/1_Krzywe_Odpornosci/krzywe_odpornosci_zbiorcze_srednia.png}
+\caption{Zbiorcze krzywe odporności klasyfikatorów: średnia wartość AUC w funkcji poziomu uszkodzeń danych dla 7 badanych strategii czyszczenia}
+\label{fig:krzywe_zbiorcze}
+\end{figure}
+
+Wykres zbiorczy uwidacznia fundamentalną prawidłowość: brak procedur czyszczących (\textit{raw} – linia pomarańczowa) prowadzi do gwałtownej degradacji jakości predykcji wszystkich modeli. Zastosowanie pełnego potoku czyszczącego (\textit{all} oraz \textit{all\_knn}) skutecznie hamuje spadek AUC, zachowując najwyższą użyteczność decyzyjną modeli nawet przy $50\%$ stopniu uszkodzenia atrybutów.
+
+\section{Szczegółowa analiza wyników na poszczególnych zbiorach danych}
+
+\subsection{Ocena na zbiorze „Zapalenia naczyń”}
+Zbiór kliniczny pacjentów z zapaleniem naczyń charakteryzuje się dużą liczbą cech ($143$) oraz obecnością kluczowych markerów stanu zapalnego. Wyniki klasyfikacji w zależności od stopnia uszkodzenia i zastosowanej metody zestawiono w tabeli~\ref{tab:wyniki_zapalenia}.
+
+\begin{table}[H]
+\centering
+\caption{Wyniki $\overline{\mathrm{AUC}}$ na zbiorze „Zapalenia naczyń” dla wybranych poziomów degradacji}
+\label{tab:wyniki_zapalenia}
+\vspace{0.2cm}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccc}
+\toprule
+\textbf{Model} & \textbf{Poziom uszkodzeń} & \textbf{\texttt{raw}} & \textbf{\texttt{fill}} & \textbf{\texttt{fill\_knn}} & \textbf{\texttt{remove\_fill}} & \textbf{\texttt{fill\_norm}} & \textbf{\texttt{all}} \\
+\midrule
+\textbf{RF}      & Uszkodzenie 10\% & $0{,}9248$ & $0{,}9315$ & $0{,}9289$ & $0{,}9295$ & $0{,}9315$ & $\mathbf{0{,}9318}$ \\
+                 & Uszkodzenie 30\% & $0{,}8845$ & $0{,}9082$ & $0{,}9024$ & $0{,}9065$ & $0{,}9082$ & $\mathbf{0{,}9112}$ \\
+                 & Uszkodzenie 50\% & $0{,}8124$ & $0{,}8641$ & $0{,}8580$ & $0{,}8612$ & $0{,}8641$ & $\mathbf{0{,}8695}$ \\
+\midrule
+\textbf{XGBoost} & Uszkodzenie 10\% & $0{,}9195$ & $0{,}9280$ & $0{,}9254$ & $0{,}9268$ & $0{,}9280$ & $\mathbf{0{,}9291}$ \\
+                 & Uszkodzenie 30\% & $0{,}8712$ & $0{,}9014$ & $0{,}8965$ & $0{,}8998$ & $0{,}9014$ & $\mathbf{0{,}9045}$ \\
+                 & Uszkodzenie 50\% & $0{,}7986$ & $0{,}8523$ & $0{,}8460$ & $0{,}8501$ & $0{,}8523$ & $\mathbf{0{,}8574}$ \\
+\midrule
+\textbf{NB}      & Uszkodzenie 10\% & $0{,}8315$ & $0{,}8592$ & $0{,}8561$ & $0{,}8580$ & $0{,}8512$ & $\mathbf{0{,}8615}$ \\
+                 & Uszkodzenie 30\% & $0{,}7342$ & $0{,}8125$ & $0{,}8104$ & $0{,}8115$ & $0{,}7980$ & $\mathbf{0{,}8190}$ \\
+                 & Uszkodzenie 50\% & $0{,}6210$ & $0{,}7450$ & $0{,}7412$ & $0{,}7438$ & $0{,}7290$ & $\mathbf{0{,}7562}$ \\
+\midrule
+\textbf{MLP}     & Uszkodzenie 10\% & $0{,}6812$ & $0{,}6945$ & $0{,}6910$ & $0{,}6930$ & $0{,}7312$ & $\mathbf{0{,}7380}$ \\
+                 & Uszkodzenie 30\% & $0{,}5740$ & $0{,}6120$ & $0{,}6085$ & $0{,}6105$ & $0{,}6895$ & $\mathbf{0{,}6984}$ \\
+                 & Uszkodzenie 50\% & $0{,}5120$ & $0{,}5412$ & $0{,}5380$ & $0{,}5400$ & $0{,}6315$ & $\mathbf{0{,}6420}$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+Na rysunku~\ref{fig:odpornosc_zapalenia} zaprezentowano ciągłe krzywe odporności modeli, natomiast na rysunku~\ref{fig:slupkowy_zapalenia_30} przedstawiono szczegółowy rozkład słupkowy skuteczności metod naprawy z uwzględnieniem odchyleń standardowych przy uszkodzeniu $30\%$. Rysunek~\ref{fig:waznosc_zapalenia} przedstawia ranking ważności cech (\textit{Feature Importance}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_Zaawansowane/1_Krzywe_Odpornosci/krzywe_odpornosci_zapalenia.png}
+\caption{Krzywe odporności modeli na zbiorze „Zapalenia naczyń” dla poszczególnych strategii czyszczenia}
+\label{fig:odpornosc_zapalenia}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_full/zapalenia/zapalenia_30proc.png}
+\caption{Porównanie skuteczności metod czyszczenia danych wraz ze słupkami błędów na zbiorze „Zapalenia naczyń” przy poziomie uszkodzeń 30\%}
+\label{fig:slupkowy_zapalenia_30}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/Wykresy_Zaawansowane/4_Waznosc_Cech/waznosc_cech_zapalenia.png}
+\caption{Ranking 15 najważniejszych cech w zbiorze „Zapalenia naczyń” wg modelu Random Forest}
+\label{fig:waznosc_zapalenia}
+\end{figure}
+
+Analiza ważności atrybutów jednoznacznie wskazuje, że kluczowymi predyktorami zgonu w układowych zapaleniach naczyń są: maksymalny poziom białka C-reaktywnego (\texttt{Max\_CRP}), stężenie kreatyniny, wiek pacjenta oraz dawki i czas trwania sterydoterapii. Zniekształcenie tych kluczowych parametrów przy braku czyszczenia obniża AUC modelu Random Forest z $0{,}939$ do $0{,}812$ przy uszkodzeniu $50\%$. Zastosowanie potoku \textit{all} pozwala odzyskać ponad $0{,}057$ AUC, utrzymując model na wysokim poziomie $0{,}869$.
+
+\subsection{Ocena na zbiorze „Serce” (Heart Disease)}
+Zbiór kardiologiczny stanowi reprezentatywny przykład danych o zrównoważonej liczbie cech ciągłych i kategorycznych ($13$ atrybutów). Dynamikę zachowania modeli, szczegółowe porównanie słupkowe przy uszkodzeniu $30\%$ oraz ranking cech przedstawiono na rysunkach~\ref{fig:odpornosc_serce}, \ref{fig:slupkowy_serce_30} i~\ref{fig:waznosc_serce}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_Zaawansowane/1_Krzywe_Odpornosci/krzywe_odpornosci_serce.png}
+\caption{Krzywe odporności modeli na zbiorze „Serce”}
+\label{fig:odpornosc_serce}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_full/serce/serce_30proc.png}
+\caption{Wpływ metod naprawy danych na jakość modeli na zbiorze „Serce” przy poziomie uszkodzeń 30\%}
+\label{fig:slupkowy_serce_30}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/Wykresy_Zaawansowane/4_Waznosc_Cech/waznosc_cech_serce.png}
+\caption{Ranking najważniejszych cech diagnostycznych w zbiorze „Serce”}
+\label{fig:waznosc_serce}
+\end{figure}
+
+Najistotniejszymi atrybutami diagnostycznymi okazały się: wynik próby talowej (\texttt{proba\_ta}), liczba zablokowanych naczyń (\texttt{zwapnienia\_miazdzycowe}), obniżenie odcinka ST (\texttt{max\_obnizka\_st}) oraz maksymalne tętno wysiłkowe. Wykres słupkowy (Rysunek~\ref{fig:slupkowy_serce_30}) wyraźnie uwidacznia, że prosta imputacja (\texttt{fill}) bez normalizacji jest niewystarczająca dla sieci MLP, podczas gdy połączenie usuwania outlierów, imputacji i standaryzacji (\texttt{all}) w pełni przywraca zdolności predykcyjne sieci.
+
+\subsection{Ocena na zbiorze „Diabetes” (Pima Indians Diabetes)}
+Zbiór Indian Pima zawiera wyłącznie atrybuty ciągłe o zróżnicowanych rozkładach. Ciągłe krzywe odporności, rozkład słupkowy przy uszkodzeniu $30\%$ oraz strukturę ważności cech zilustrowano na rysunkach~\ref{fig:odpornosc_diabetes}, \ref{fig:slupkowy_diabetes_30} i~\ref{fig:waznosc_diabetes}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_Zaawansowane/1_Krzywe_Odpornosci/krzywe_odpornosci_diabetes.png}
+\caption{Krzywe odporności modeli na zbiorze „Diabetes”}
+\label{fig:odpornosc_diabetes}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_full/diabetes/diabetes_30proc.png}
+\caption{Porównanie skuteczności metod czyszczenia na zbiorze „Diabetes” przy uszkodzeniu 30\%}
+\label{fig:slupkowy_diabetes_30}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/Wykresy_Zaawansowane/4_Waznosc_Cech/waznosc_cech_diabetes.png}
+\caption{Ważność cech biochemicznych w predykcji cukrzycy (zbiór „Diabetes”)}
+\label{fig:waznosc_diabetes}
+\end{figure}
+
+Głównym predyktorem cukrzycy jest stężenie glukozy w osoczu (\texttt{plas}) oraz wskaźnik masy ciała (\texttt{mass}). W przypadku braku normalizacji i obecności ekstremalnych wartości odstających sieć MLP ulega całkowitej degradacji ($\mathrm{AUC} \approx 0{,}504$ przy $50\%$ uszkodzeń, co odpowiada klasyfikatorowi losowemu). Wdrożenie potoku \textit{all} podnosi AUC sieci MLP do poziomu $0{,}642$, co stanowi bezwzględny zysk rzędu $\Delta \mathrm{AUC} = +0{,}138$.
+
+\subsection{Ocena na zbiorze „Rezygnacje” (Customer Churn)}
+Zbiór telekomunikacyjny charakteryzuje się dużą próbą ($N=3333$) i dominacją atrybutów bilingowych. Odpowiednie wykresy przedstawiono na rysunkach~\ref{fig:odpornosc_rezygnacje}, \ref{fig:slupkowy_rezygnacje_30} i~\ref{fig:waznosc_rezygnacje}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_Zaawansowane/1_Krzywe_Odpornosci/krzywe_odpornosci_rezygnacje.png}
+\caption{Krzywe odporności modeli na zbiorze „Rezygnacje”}
+\label{fig:odpornosc_rezygnacje}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_full/rezygnacje/rezygnacje_30proc.png}
+\caption{Skuteczność strategii naprawy danych na zbiorze „Rezygnacje” przy uszkodzeniu 30\%}
+\label{fig:slupkowy_rezygnacje_30}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/Wykresy_Zaawansowane/4_Waznosc_Cech/waznosc_cech_rezygnacje.png}
+\caption{Ranking cech decydujących o migracji klientów w zbiorze „Rezygnacje”}
+\label{fig:waznosc_rezygnacje}
+\end{figure}
+
+W zbiorze tym dominującą rolę odgrywają: całkowity czas połączeń w dzień (\texttt{DZIEN\_MIN}), naliczona opłata dzienna (\texttt{DZIEN\_OPLATA}) oraz liczba kontaktów z biurem obsługi (\texttt{L\_POL\_BIURO}). Modele XGBoost i Random Forest dominują nad klasyfikatorami prostymi, zachowując $\mathrm{AUC} > 0{,}80$ nawet przy $50\%$ zanieczyszczeń.
+
+\subsection{Ocena na zbiorze „Kredyty” (German Credit)}
+Zbiór oceny ryzyka kredytowego zawiera liczne cechy kategoryczne i jest zadaniem o najniższej bazowej separowalności. Wyniki przedstawiono na rysunkach~\ref{fig:odpornosc_kredyty}, \ref{fig:slupkowy_kredyty_30} i~\ref{fig:waznosc_kredyty}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_Zaawansowane/1_Krzywe_Odpornosci/krzywe_odpornosci_kredyty.png}
+\caption{Krzywe odporności modeli na zbiorze „Kredyty”}
+\label{fig:odpornosc_kredyty}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/Wykresy_full/kredyty/kredyty_30proc.png}
+\caption{Porównanie modeli i metod czyszczenia na zbiorze „Kredyty” przy poziomie uszkodzeń 30\%}
+\label{fig:slupkowy_kredyty_30}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/Wykresy_Zaawansowane/4_Waznosc_Cech/waznosc_cech_kredyty.png}
+\caption{Ranking cech determinujących ocenę ryzyka w zbiorze „Kredyty”}
+\label{fig:waznosc_kredyty}
+\end{figure}
+
+Kluczowymi czynnikami ryzyka kredytowego są: czas trwania rachunku (\texttt{Czas\_trwania\_konta}), wnioskowana kwota pożyczki (\texttt{Kwota\_kredytu}) oraz wiek pożyczkobiorcy (\texttt{Wiek}).
+
+\section{Analiza zysku z czyszczenia danych ($\Delta \mathrm{AUC}$) i profile wielowymiarowe}
+Aby dokonać całościowej syntezy zysków z poszczególnych strategii czyszczenia danych, wygenerowano macierze korelacji zysku $\Delta \mathrm{AUC}$ w trzech przekrojach badawczych.
+
+Rysunek~\ref{fig:heatmapa_model} przedstawia zależność zysku od rodziny klasyfikatora, rysunek~\ref{fig:heatmapa_dataset} w przekroju zbiorów danych, a rysunek~\ref{fig:heatmapa_poziom} w funkcji nasilenia zanieczyszczeń.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/Wykresy_Zaawansowane/2_Heatmapy_Zysku_Delta_AUC/heatmapa_delta_auc_model_vs_metoda.png}
+\caption{Heatmapa średniego zysku $\Delta \mathrm{AUC}$ w relacji: Badana rodzina modelu vs Zastosowana metoda czyszczenia}
+\label{fig:heatmapa_model}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/Wykresy_Zaawansowane/2_Heatmapy_Zysku_Delta_AUC/heatmapa_delta_auc_dataset_vs_metoda.png}
+\caption{Heatmapa średniego zysku $\Delta \mathrm{AUC}$ w relacji: Zbiór danych vs Zastosowana metoda czyszczenia}
+\label{fig:heatmapa_dataset}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/Wykresy_Zaawansowane/2_Heatmapy_Zysku_Delta_AUC/heatmapa_delta_auc_poziom_uszkodzen.png}
+\caption{Heatmapa średniego zysku $\Delta \mathrm{AUC}$ w funkcji poziomu uszkodzeń danych}
+\label{fig:heatmapa_poziom}
+\end{figure}
+
+Wnioski płynące z analizy heatmap:
+\begin{enumerate}
+    \item \textbf{Asymetria wrażliwości architektur}: Sieć neuronowa (MLP) oraz Naiwny Bayes osiągają największe zyski ze złożonych potoków (\textit{all}: średnio $+0{,}07$ do $+0{,}14$ $\Delta \mathrm{AUC}$). Dla sieci MLP kluczowa jest obecność normalizacji (\textit{fill\_norm} lub \textit{all}), bez której optymalizacja wag staje się niestabilna.
+    \item \textbf{Efekt skali uszkodzeń}: Zysk $\Delta \mathrm{AUC}$ z wdrożenia czyszczenia rośnie monotonicznie wraz z poziomem degradacji danych — od średnio $+0{,}015$ przy uszkodzeniu $10\%$ do ponad $+0{,}085$ przy uszkodzeniu $50\%$.
+    \item \textbf{Synergia metod}: Pojedyncza imputacja (\textit{fill}) daje istotny zysk, jednak dopiero połączenie eliminacji outlierów ze standaryzacją i imputacją (\textit{all}) gwarantuje globalnie najwyższą skuteczność.
+\end{enumerate}
+
+Wielowymiarowe profile odporności metod zilustrowano za pomocą wykresów radarowych na rysunkach~\ref{fig:radar_model} i~\ref{fig:radar_dataset}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{figures/Wykresy_Zaawansowane/3_Wykresy_Radarowe/radar_metody_per_model.png}
+\caption{Wykres radarowy względnej odporności metod czyszczenia dla poszczególnych klasyfikatorów}
+\label{fig:radar_model}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{figures/Wykresy_Zaawansowane/3_Wykresy_Radarowe/radar_metody_per_dataset.png}
+\caption{Wykres radarowy skuteczności metod czyszczenia w przekroju badanych zbiorów danych}
+\label{fig:radar_dataset}
+\end{figure}
+
+\section{Porównanie strategii imputacji: Mediana vs KNN Imputer}
+W ramach pracy przeprowadzono bezpośrednie porównanie prostych estymatorów statystycznych (imputacja medianą) z metodami opartymi na wielowymiarowym sąsiedztwie rekordów (\texttt{KNNImputer}, $k=5$). Zestawienie wyników przedstawiono na rysunku~\ref{fig:pojedynek_knn}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/Wykresy_Zaawansowane/5_Pojedynek_Mediana_vs_KNN/pojedynek_mediana_vs_knn.png}
+\caption{Bezpośrednie porównanie skuteczności imputacji medianą i algorytmem KNN w potokach przetwarzania}
+\label{fig:pojedynek_knn}
+\end{figure}
+
+Obserwacje eksperymentalne wskazują, że:
+\begin{itemize}
+    \item W przypadku braku wcześniejszej filtracji wartości odstających, \texttt{KNNImputer} bywa podatny na propagację błędów, ponieważ zniekształcone rekordy zaburzają metrykę odległości euklidesowej w przestrzeni cech.
+    \item W połączeniu z usuwaniem outlierów (\textit{all\_knn}) algorytm KNN osiąga wyniki zbliżone lub nieznacznie przewyższające medianę na zbiorach o silnych korelacjach wewnętrznych (np. \textit{Diabetes}, \textit{Serce}), jednak wiąże się ze znacznie wyższym narzutem czasowym obliczeń ($\approx 12\times$ dłuższy czas fazy \texttt{transform}).
+    \item W praktyce inżynierskiej imputacja medianą w ramach potoku \textit{all} stanowi optymalny kompromis pomiędzy dokładnością a złożonością obliczeniową.
+\end{itemize}
+
+\section{Weryfikacja istotności statystycznej wyników}
+W celu potwierdzenia, że obserwowane różnice w skuteczności modeli nie są dziełem przypadku losowego, przeprowadzono formalne testy statystyczne:
+\begin{enumerate}
+    \item \textbf{Globalny test rangowy Friedmana}: dla każdego zbioru danych i modelu zweryfikowano hipotezę o równoważności 7 badanych strategii czyszczenia. We wszystkich 20 konfiguracjach testowych (5 zbiorów $\times$ 4 modele) test Friedmana odrzucił hipotezę zerową ($p < 0{,}001$), potwierdzając wysoce istotny wpływ wyboru metody czyszczenia na końcowy wynik.
+    \item \textbf{Test rangowy znaków Wilcoxona}: przeprowadzono testy post-hoc porównujące każdą strategię naprawczą z wariantem bazowym (\textit{raw}) na poziomie istotności $\alpha = 0{,}05$.
+\end{enumerate}
+
+Zbiorcze podsumowanie liczby przypadków z potwierdzoną statystycznie istotną przewagą nad danymi nieoczyszczonymi przedstawiono w tabeli~\ref{tab:testy_istotnosci}.
+
+\begin{table}[H]
+\centering
+\caption{Liczba konfiguracji (na 5 zbiorów danych), w których dana metoda czyszczenia wykazała istotną statystycznie przewagę nad wariantem \texttt{raw} (test Wilcoxona, $\alpha = 0{,}05$)}
+\label{tab:testy_istotnosci}
+\vspace{0.2cm}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{\texttt{all}} & \textbf{\texttt{all\_knn}} & \textbf{\texttt{fill}} & \textbf{\texttt{fill\_knn}} & \textbf{\texttt{fill\_norm}} & \textbf{\texttt{remove\_fill}} \\
+\midrule
+\textbf{MLP (Sieć neuronowa)} & \textbf{5 / 5} & \textbf{5 / 5} & 1 / 5 & 1 / 5 & \textbf{5 / 5} & 2 / 5 \\
+\textbf{Gaussian Naive Bayes} & \textbf{4 / 5} & \textbf{4 / 5} & \textbf{4 / 5} & \textbf{4 / 5} & \textbf{4 / 5} & \textbf{4 / 5} \\
+\textbf{Random Forest}        & \textbf{4 / 5} & 3 / 5 & 3 / 5 & 2 / 5 & 3 / 5 & \textbf{4 / 5} \\
+\textbf{XGBoost}              & 3 / 5 & \textbf{4 / 5} & 3 / 5 & \textbf{4 / 5} & 3 / 5 & 3 / 5 \\
+\midrule
+\textbf{Łącznie (na 20 prób)} & \textbf{16 / 20} & \textbf{16 / 20} & 11 / 20 & 11 / 20 & 15 / 20 & 13 / 20 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Globalny ranking metod – Diagram Różnic Krytycznych (CD Diagram)}
+W celu syntetycznego porównania wszystkich 7 strategii czyszczenia danych na całej próbie eksperymentalnej ($N=900$ ewaluacji), wyznaczono średnie rangi metod i przeprowadzono post-hoc test Nemenyi na poziomie istotności $\alpha = 0{,}05$. Rezultat przedstawiono na Diagramie Różnic Krytycznych Demšara \cite{Demsar2006} (Rysunek~\ref{fig:cd_diagram}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.98\textwidth]{figures/cd_diagram_full.png}
+\caption{Diagram Różnic Krytycznych (CD Diagram) dla 7 badanych metod czyszczenia danych ($N=900$ ewaluacji, test post-hoc Nemenyi wg metodyki Demšara \cite{Demsar2006} przy $\alpha = 0{,}05$, wartość $\mathrm{CD} = 0{,}300$)}
+\label{fig:cd_diagram}
+\end{figure}
+
+Wnioski płynące z analizy rang i Diagramu CD:
+\begin{enumerate}
+    \item \textbf{Globalny lider}: Najwyższą (najniższą numerycznie) średnią rangę w całym eksperymencie osiągnęła metoda \textbf{\texttt{all}} (ranga $3{,}06$), wyprzedzając wariant \textbf{\texttt{all\_knn}} (ranga $3{,}35$).
+    \item \textbf{Grupa jednorodna top-metod}: Pogrubiona pozioma belka łączy metody \texttt{all} oraz \texttt{all\_knn}, co oznacza brak statystycznie istotnej różnicy pomiędzy medianą a $k$-NN w pełnym potoku przy uwzględnieniu różnicy krytycznej $\mathrm{CD} = 0{,}300$. Obie te metody są jednak statystycznie istotnie lepsze od metod prostych (\texttt{fill}, \texttt{fill\_knn}) oraz od danych nieoczyszczonych (\texttt{raw}).
+    \item \textbf{Pozycja danych nieoczyszczonych}: Wariant \texttt{raw} zajął przedostatnie miejsce w rankingu (ranga $4{,}58$), a gorszy wynik odnotował jedynie wariant \texttt{fill\_knn} (ranga $4{,}97$), w którym brak filtracji wartości odstających zafałszował obliczenia odległości euklidesowej algorytmu najbliższych sąsiadów.
+\end{enumerate}

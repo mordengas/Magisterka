@@ -1,0 +1,114 @@
+\chapter{Część teoretyczna}
+
+{%\markboth{}{}
+%\setlength{\parskip}{1.2ex plus 0.5ex minus 0.2ex}
+%\baselineskip 0.6cm
+
+%\lipsum % usunąć linię
+
+\section{Metody czyszczenia danych}
+Proces czyszczenia danych stanowi jeden z najważniejszych etapów przygotowania zbioru do analizy i budowy modeli klasyfikacyjnych. W praktyce dane rzeczywiste rzadko są kompletne i spójne. Często zawierają braki, obserwacje skrajne, niespójne formaty zapisu oraz atrybuty o bardzo różnych skalach. Jeżeli takie problemy nie zostaną rozpoznane i odpowiednio obsłużone, mogą prowadzić do zafałszowania statystyk opisowych, pogorszenia procesu uczenia modelu oraz obniżenia jakości predykcji. Z tego względu czyszczenie danych należy traktować nie jako czynność techniczną, lecz jako element mający bezpośredni wpływ na wiarygodność wyników eksperymentu.
+
+\subsection{Uzupełnianie braków}
+Brakujące wartości są jednym z najczęściej spotykanych problemów w zbiorach danych. Mogą pojawiać się między innymi w wyniku błędów pomiaru, pominięcia odpowiedzi przez użytkownika, awarii systemu rejestrującego dane lub trudności z integracją danych z wielu źródeł. Walker podkreśla, że przed rozpoczęciem właściwej analizy należy ustalić nie tylko liczbę braków w poszczególnych kolumnach, ale również to, czy braki koncentrują się w określonych wierszach lub grupach obserwacji \cite{Walker2021}. Taka diagnoza pozwala ocenić, czy problem ma charakter lokalny, czy dotyczy większej części zbioru.
+
+Najprostszym sposobem postępowania z brakami jest usunięcie obserwacji lub atrybutów, w których liczba pustych pól jest bardzo wysoka. Rozwiązanie to jest uzasadnione przede wszystkim wtedy, gdy brakujące dane dotyczą niewielkiej części zbioru albo gdy dany rekord niesie zbyt mało informacji, by był użyteczny w dalszej analizie. Zaletą tej metody jest prostota, jednak jej wadą jest ryzyko utraty cennych informacji oraz zmniejszenia liczby przykładów uczących, co bywa szczególnie niekorzystne przy małych zbiorach danych.
+
+Drugą grupę metod stanowią techniki imputacji, czyli uzupełniania braków na podstawie informacji dostępnych w zbiorze. Do metod prostych zalicza się zastępowanie pustych wartości średnią, medianą, dominantą lub stałą wartością. Rozwiązania te są szybkie i łatwe do implementacji, jednak mogą prowadzić do spłaszczenia rozkładu danych oraz osłabienia naturalnej zmienności cech. Z tego względu w danych numerycznych mediana bywa bezpieczniejsza od średniej, zwłaszcza gdy rozkład jest skośny albo zawiera obserwacje skrajne \cite{Walker2021}.
+
+Bardziej wiarygodne wyniki można uzyskać dzięki imputacji warunkowej, na przykład poprzez zastępowanie braków średnią w obrębie określonej grupy, lub poprzez wykorzystanie metod opartych na podobieństwie obserwacji. Przykładem takiego podejścia jest imputacja z użyciem algorytmu k najbliższych sąsiadów, w której brakująca wartość jest wyznaczana na podstawie najbardziej podobnych rekordów \cite{Walker2021,SklearnKNNImputer}. Metoda ta zwykle lepiej zachowuje strukturę danych niż imputacja globalna, ale jest bardziej kosztowna obliczeniowo i wrażliwa na sposób skalowania cech.
+
+W literaturze zwraca się także uwagę, że dobór metody uzupełniania braków powinien zależeć od charakteru danych. Wypełnianie w przód ma sens zwłaszcza w szeregach czasowych, gdy brakującą wartość można wiązać z poprzednią obserwacją. Z kolei w danych tabelarycznych wykorzystywanych do klasyfikacji częściej stosuje się imputację statystyczną lub sąsiedztwa. Niezależnie od wybranej techniki, celem nie jest jedynie techniczne usunięcie pustych pól, ale zachowanie możliwie wiernego obrazu badanego zjawiska.
+
+\subsection{Normalizacja}
+Normalizacja i standaryzacja służą do sprowadzenia atrybutów numerycznych do porównywalnej skali. Zabieg ten jest istotny szczególnie wtedy, gdy poszczególne cechy opisują różne wielkości, na przykład wiek, dochód i liczbę wizyt, a ich wartości różnią się o kilka rzędów wielkości. Według dokumentacji biblioteki scikit-learn wiele algorytmów uczenia maszynowego działa poprawniej wtedy, gdy cechy są wyśrodkowane i mają podobną wariancję, ponieważ w przeciwnym razie atrybut o największej skali może zdominować proces uczenia \cite{SklearnPreprocessing,SklearnStandardScaler}.
+
+Jedną z najczęściej stosowanych metod jest standaryzacja z wykorzystaniem z-score. Polega ona na odjęciu od każdej wartości średniej danej cechy i podzieleniu wyniku przez odchylenie standardowe:
+\[
+z = \frac{x - \mu}{\sigma}
+\]
+Po takim przekształceniu cecha ma średnią równą 0 oraz odchylenie standardowe równe 1. Metoda ta jest szczególnie przydatna w modelach wrażliwych na skalę danych, takich jak sieci neuronowe, metody oparte na odległości czy algorytmy wykorzystujące optymalizację gradientową.
+
+Drugim popularnym rozwiązaniem jest skalowanie min-max, które przekształca wartości do ustalonego przedziału, najczęściej $[0,1]$, zgodnie ze wzorem:
+\[
+x' = \frac{x - x_{min}}{x_{max} - x_{min}}
+\]
+Metoda ta zachowuje względne położenie obserwacji w obrębie cechy, ale jest wrażliwa na wartości odstające, ponieważ obserwacje skrajne wpływają bezpośrednio na wartości minimalne i maksymalne \cite{SklearnMinMaxScaler}. W praktyce oznacza to, że przy obecności anomalii większość danych może zostać ściśnięta do bardzo wąskiego zakresu.
+
+W kontekście badań nad klasyfikacją istotne jest również to, że normalizacja powinna być wykonywana po rozpoznaniu braków danych i po podjęciu decyzji dotyczących wartości odstających. Dodatkowo parametry transformacji, takie jak średnia, odchylenie standardowe, minimum i maksimum, powinny być wyznaczane wyłącznie na zbiorze uczącym, a następnie przenoszone na zbiór testowy. Pozwala to uniknąć przecieku informacji i zapewnia poprawną ocenę jakości modelu \cite{SklearnPreprocessing}.
+
+\subsection{Identyfikacja i obsługa wartości odstających}
+Wartości odstające to obserwacje wyraźnie odbiegające od typowego rozkładu danych albo od relacji występujących pomiędzy cechami. Nie każda obserwacja skrajna jest błędem, ponieważ może reprezentować rzeczywisty, lecz rzadki przypadek. Walker zwraca uwagę, że problem pojawia się wtedy, gdy takie wartości mają zbyt duży wpływ na analizę, zwłaszcza na średnią, odchylenie standardowe, proces imputacji oraz modelowanie statystyczne \cite{Walker2021}. Z tego względu przed ich usunięciem należy ustalić, czy wynikają one z błędu pomiaru, czy stanowią ważną informację o badanym zjawisku.
+
+Podstawowe metody wykrywania wartości odstających dotyczą pojedynczej zmiennej. W praktyce często wykorzystuje się analizę rozkładu, histogramy, wykresy pudełkowe oraz kryterium rozstępu międzykwartylowego. W podejściu IQR obserwację uznaje się za odstającą, gdy znajduje się poniżej $Q_1 - 1{,}5 \cdot IQR$ lub powyżej $Q_3 + 1{,}5 \cdot IQR$, gdzie $IQR = Q_3 - Q_1$ \cite{Walker2021}. W przypadku danych zbliżonych do rozkładu normalnego pomocny bywa także z-score, wskazujący, o ile odchyleń standardowych dana obserwacja odbiega od średniej.
+
+W bardziej złożonych zbiorach samo spojrzenie na pojedyncze cechy może być niewystarczające, ponieważ anomalia bywa widoczna dopiero w relacji kilku zmiennych. Z tego powodu stosuje się metody wielowymiarowe, takie jak algorytm k najbliższych sąsiadów lub Isolation Forest. Pierwsza z nich identyfikuje obserwacje znacząco różniące się od swoich sąsiadów w przestrzeni cech, natomiast druga izoluje rekordy, które można oddzielić od reszty zbioru niewielką liczbą losowych podziałów \cite{Walker2021,Liu2008}. Metody te są szczególnie użyteczne w analizach eksperymentalnych, w których nie da się z góry określić wszystkich reguł poprawności danych.
+
+Obsługa wartości odstających nie musi oznaczać ich automatycznego usunięcia. W zależności od celu analizy możliwe jest pozostawienie obserwacji, korekta oczywistych błędów, przycięcie wartości skrajnych, transformacja zmiennej lub oznaczenie podejrzanych rekordów do dalszej kontroli. W badaniach dotyczących jakości klasyfikatorów decyzja o postępowaniu z wartościami odstającymi ma szczególne znaczenie, ponieważ może zmieniać zarówno granice decyzyjne modelu, jak i końcowe metryki skuteczności. Oznacza to, że sposób przygotowania danych należy rozpatrywać łącznie z charakterystyką modelu wykorzystywanego w dalszej analizie.
+\section{Wybrane algorytmy klasyfikacji}
+Po omówieniu podstawowych metod przygotowania danych można przejść do klasyfikatorów wykorzystanych w części eksperymentalnej. W pracy zastosowano cztery algorytmy reprezentujące różne podejścia do budowy modeli: klasyfikator probabilistyczny, sieć neuronową oraz dwa modele zespołowe oparte na drzewach decyzyjnych. Taki dobór pozwala porównać wpływ metod czyszczenia danych na klasyfikatory o odmiennej wrażliwości na braki danych, wartości odstające oraz skalę atrybutów. Dzięki temu analiza nie ogranicza się do jednej rodziny modeli, lecz obejmuje zarówno algorytmy proste i szybkie, jak i bardziej złożone metody nastawione na wysoką skuteczność predykcyjną.
+
+\subsection{Naiwny Klasyfikator Bayesa (NB)}
+Naiwny klasyfikator Bayesa jest metodą probabilistyczną opartą na twierdzeniu Bayesa. Jego działanie polega na wyznaczaniu prawdopodobieństwa przynależności obserwacji do danej klasy na podstawie wartości cech wejściowych. Najważniejszym założeniem modelu jest warunkowa niezależność atrybutów względem klasy decyzyjnej. Założenie to rzadko jest w pełni spełnione w danych rzeczywistych, jednak mimo tego algorytm często osiąga zadowalające wyniki i pozostaje ważnym punktem odniesienia w badaniach porównawczych \cite{SklearnGaussianNB}.
+
+W przypadku danych numerycznych często stosuje się wariant Gaussian Naive Bayes, w którym zakłada się, że wartości każdej cechy w obrębie danej klasy mają rozkład normalny. Model estymuje dla każdej klasy średnią i wariancję poszczególnych atrybutów, a następnie na ich podstawie oblicza prawdopodobieństwa warunkowe. Dzięki temu klasyfikator jest bardzo szybki zarówno na etapie uczenia, jak i predykcji, a jego implementacja nie wymaga dużych zasobów obliczeniowych.
+
+Zaletą tego podejścia jest prostota, mała liczba parametrów oraz dobra użyteczność przy niewielkich zbiorach danych. Ograniczeniem jest natomiast wysoka zależność jakości modelu od poprawnego oszacowania parametrów rozkładu. Oznacza to, że brakujące dane, błędna imputacja lub obecność silnych obserwacji odstających mogą zaburzać średnie i wariancje cech, a w konsekwencji pogarszać jakość klasyfikacji. Z tego względu model Bayesa dobrze nadaje się do analizy wpływu czyszczenia danych na skuteczność klasyfikatora.
+
+\subsection{Sieci Neuronowe (MLP)}
+MLP, czyli perceptron wielowarstwowy, należy do grupy sztucznych sieci neuronowych uczonych metodą nadzorowaną. Model składa się z warstwy wejściowej, jednej lub wielu warstw ukrytych oraz warstwy wyjściowej. Każdy neuron przetwarza sygnały wejściowe, wyznacza ich ważoną sumę, a następnie przekazuje wynik przez funkcję aktywacji. W procesie uczenia wagi połączeń są aktualizowane tak, aby minimalizować funkcję straty \cite{SklearnMLPClassifier}.
+
+Najważniejszą zaletą sieci MLP jest zdolność modelowania złożonych, nieliniowych zależności pomiędzy cechami a zmienną decyzyjną. Dzięki temu model może wykrywać relacje, których nie wychwytują prostsze klasyfikatory liniowe lub probabilistyczne. W praktyce oznacza to dużą elastyczność, ale również większą liczbę parametrów do strojenia, takich jak liczba neuronów, liczba warstw ukrytych, rodzaj funkcji aktywacji czy metoda optymalizacji.
+
+Sieci neuronowe są zwykle bardziej wrażliwe na jakość danych wejściowych niż modele drzewiaste. Szczególne znaczenie ma tutaj normalizacja cech, ponieważ bardzo różne skale atrybutów mogą utrudniać proces uczenia i spowalniać zbieżność algorytmu. Znaczenie mają również błędne obserwacje i nietrafiona imputacja braków danych, które mogą prowadzić do uczenia się przypadkowego szumu. Z tego powodu MLP stanowi dobry przykład klasyfikatora, dla którego preprocessing może mieć bezpośredni wpływ na końcową skuteczność.
+
+\subsection{Lasy Losowe (Random Forest)}
+Las losowy jest metodą zespołową, w której końcowa decyzja podejmowana jest na podstawie wielu drzew decyzyjnych. Każde drzewo uczone jest na innym podzbiorze danych wygenerowanym metodą bootstrap, a podczas wyboru podziału analizowany jest losowy podzbiór cech. W klasyfikacji wynik końcowy jest zazwyczaj ustalany przez głosowanie większościowe wszystkich drzew w zespole \cite{SklearnRandomForest}.
+
+Takie podejście pozwala ograniczyć nadmierne dopasowanie charakterystyczne dla pojedynczych drzew decyzyjnych i zwykle zapewnia dobrą jakość predykcji dla danych tabelarycznych. Las losowy potrafi modelować zależności nieliniowe oraz interakcje pomiędzy cechami, a jednocześnie jest stosunkowo odporny na szum i mniej wrażliwy na skalę zmiennych niż algorytmy oparte na odległości lub optymalizacji gradientowej. Z tego względu w wielu zastosowaniach nie wymaga normalizacji danych.
+
+Nie oznacza to jednak, że jakość danych nie ma dla tego modelu znaczenia. Duża liczba błędnych rekordów, źle obsłużone braki lub nierealistyczne obserwacje skrajne mogą prowadzić do budowy mniej trafnych podziałów w drzewach, a tym samym obniżać stabilność całego zespołu. Random Forest jest więc użyteczny w badaniu jako klasyfikator relatywnie odporny na preprocessing, co pozwala porównać go z modelami bardziej wrażliwymi na czyszczenie danych.
+
+\subsection{XGBoost}
+XGBoost jest zaawansowaną implementacją gradient boosting dla drzew decyzyjnych. Idea tego podejścia polega na sekwencyjnym budowaniu kolejnych drzew, z których każde stara się skorygować błędy popełnione przez wcześniejsze elementy zespołu. W rezultacie model końcowy powstaje jako suma wielu słabych modeli, które razem tworzą silny klasyfikator \cite{ChenGuestrin2016,XGBoostDocs}.
+
+Dużą zaletą XGBoost jest połączenie wysokiej skuteczności predykcyjnej z rozwiązaniami poprawiającymi wydajność obliczeniową, takimi jak regularizacja, próbkowanie obserwacji i cech, obsługa sparsity oraz optymalizacja procesu budowy drzew. Z tego względu algorytm ten jest bardzo często stosowany w zadaniach klasyfikacji danych tabelarycznych i bywa traktowany jako jeden z najmocniejszych modeli referencyjnych.
+
+W porównaniu z klasycznym lasem losowym XGBoost zwykle mocniej wykorzystuje informacje ukryte w danych, ale jednocześnie może być bardziej podatny na przeuczenie, jeśli zbiór zawiera dużo szumu lub błędów. Mimo że modele oparte na drzewach są na ogół mało wrażliwe na samą normalizację, to jakość imputacji braków i sposób obsługi obserwacji odstających nadal mogą wpływać na dobór podziałów i jakość końcowego modelu. Z tego względu XGBoost jest szczególnie interesujący w badaniu wpływu metod czyszczenia danych na skuteczność klasyfikacji. Aby porównanie modeli było pełne, konieczne jest jeszcze wskazanie, w jaki sposób skuteczność ta będzie oceniana.
+\section{Metryki oceny jakości modeli}
+Ocena jakości klasyfikatorów wymaga zastosowania odpowiednich metryk, które pozwalają porównać modele nie tylko pod względem liczby poprawnych predykcji, ale również pod względem stabilności i zdolności rozróżniania klas. W badaniach przedstawionych w tej pracy główną miarą porównawczą jest pole pod krzywą ROC, czyli AUC. Dodatkowo, ponieważ wyniki uzyskiwano wielokrotnie, analizowano również średnią wartość AUC oraz odchylenie standardowe tej metryki. Takie podejście pozwala ocenić zarówno skuteczność modelu, jak i powtarzalność uzyskiwanych rezultatów.
+
+\subsection{Krzywa ROC i pole AUC}
+Krzywa ROC (Receiver Operating Characteristic) przedstawia zależność pomiędzy czułością klasyfikatora a odsetkiem fałszywie pozytywnych wskazań przy zmianie progu decyzyjnego \cite{SklearnRocCurve}. Na osi pionowej znajduje się współczynnik true positive rate, czyli:
+\[
+TPR = \frac{TP}{TP + FN}
+\]
+natomiast na osi poziomej współczynnik false positive rate:
+\[
+FPR = \frac{FP}{FP + TN}
+\]
+Krzywa ROC pozwala więc ocenić, jak dobrze model odróżnia klasę pozytywną od negatywnej przy różnych ustawieniach progu klasyfikacji.
+
+Pole pod tą krzywą, czyli AUC (Area Under the Curve), jest syntetyczną miarą jakości modelu niezależną od jednego, z góry ustalonego progu decyzyjnego \cite{SklearnRocAuc}. Im większa wartość AUC, tym lepsza zdolność modelu do rozróżniania klas. W praktyce wartość zbliżona do 0{,}5 oznacza skuteczność zbliżoną do losowej, natomiast wartość bliższa 1 świadczy o bardzo dobrej separacji klas. Metryka ta jest szczególnie użyteczna wtedy, gdy zbiory danych są niezrównoważone lub gdy sam procent poprawnych klasyfikacji nie oddaje w pełni jakości modelu.
+
+Zastosowanie AUC w tej pracy jest uzasadnione również tym, że badane klasyfikatory zwracają nie tylko etykiety klas, ale także oceny lub prawdopodobieństwa przynależności do klasy. Dzięki temu możliwe jest porównanie modeli na poziomie jakości rankingu predykcji, a nie wyłącznie końcowych decyzji binarnych.
+
+\subsection{Średnia wartość AUC}
+Ponieważ wynik pojedynczego uruchomienia modelu może zależeć od podziału danych, losowej inicjalizacji lub losowości samego algorytmu, w praktyce nie powinno się opierać wniosków na jednej wartości metryki. Z tego względu w eksperymentach stosuje się wielokrotne powtórzenia oceny modelu, a następnie oblicza średnią wartość uzyskanej metryki. W tej pracy rolę tę pełni wartość \texttt{AUC\_srednia}.
+
+Średnia AUC informuje o przeciętnej jakości klasyfikatora w serii powtórzeń i pozwala ograniczyć wpływ pojedynczych, niereprezentatywnych wyników. Jest to istotne zwłaszcza w badaniach porównawczych, gdzie analizuje się kilka modeli oraz kilka wariantów czyszczenia danych. Dzięki uśrednieniu wyników możliwe staje się bardziej obiektywne porównanie skuteczności poszczególnych metod przygotowania danych.
+
+\subsection{Odchylenie standardowe wyników}
+Sama średnia nie mówi jednak wszystkiego o zachowaniu modelu. Dwa klasyfikatory mogą osiągać podobną średnią wartość AUC, ale jeden z nich może działać stabilnie, a drugi generować bardzo zmienne wyniki. Z tego powodu obok średniej analizuje się również odchylenie standardowe, które w przedstawionych wynikach zapisano jako \texttt{AUC\_std}. NumPy definiuje odchylenie standardowe jako miarę rozproszenia wartości wokół średniej \cite{NumpyStd}.
+
+Niska wartość odchylenia standardowego oznacza, że model osiąga zbliżone wyniki w kolejnych powtórzeniach, a więc działa w sposób bardziej przewidywalny. Wysoka wartość wskazuje natomiast, że skuteczność modelu silnie zależy od konkretnego podziału danych lub od losowych elementów procedury uczenia. W kontekście tej pracy ma to duże znaczenie, ponieważ metoda czyszczenia danych powinna nie tylko poprawiać średnią jakość klasyfikacji, ale również zwiększać stabilność działania modelu.
+
+\subsection{Metryki pomocnicze}
+W dodatkowych analizach pomocniczych można wykorzystywać także dokładność klasyfikacji oraz miarę F1. Accuracy określa udział poprawnie sklasyfikowanych obserwacji w całym zbiorze \cite{SklearnAccuracy}. Jest to metryka intuicyjna, ale w przypadku niezrównoważonych klas może prowadzić do mylnych wniosków, ponieważ model może osiągać wysoką dokładność nawet wtedy, gdy preferuje klasę dominującą.
+
+Miara F1 stanowi harmoniczną średnią precyzji i czułości:
+\[
+F1 = \frac{2 \cdot TP}{2 \cdot TP + FP + FN}
+\]
+Metryka ta jest szczególnie użyteczna wtedy, gdy istotne jest jednoczesne ograniczenie liczby wyników fałszywie dodatnich i fałszywie ujemnych \cite{SklearnF1}. Mimo to w głównej części porównania modeli większy nacisk położono na AUC, ponieważ lepiej odzwierciedla ono zdolność klasyfikatora do rozdzielania klas w różnych ustawieniach progu decyzyjnego.
+}

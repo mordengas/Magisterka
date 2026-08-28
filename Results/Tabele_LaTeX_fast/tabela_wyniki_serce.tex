@@ -1,0 +1,32 @@
+\begin{table}[htbp]
+\caption{Średnie wartości AUC $\pm$ odchylenie standardowe dla zbioru \textbf{Serce}}
+\label{tab:wyniki_serce}
+\begin{tabular}{llccc}
+\toprule
+ &  & RF & NB & XGBoost \\
+Uszkodzenie & Metoda &  &  &  \\
+\midrule
+\multirow[t]{2}{*}{ORYGINALNY} & original & - & - & - \\
+ & raw & 0.893 $\pm$ 0.010 & 0.860 $\pm$ 0.021 & 0.884 $\pm$ 0.015 \\
+\cline{1-5}
+\multirow[t]{5}{*}{20%} & raw & \textbf{0.854 $\pm$ 0.014} & \textbf{0.828 $\pm$ 0.006} & \textbf{0.827 $\pm$ 0.017} \\
+ & fill & 0.839 $\pm$ 0.014 & 0.817 $\pm$ 0.004 & 0.818 $\pm$ 0.012 \\
+ & remove_fill & 0.845 $\pm$ 0.018 & 0.821 $\pm$ 0.013 & 0.824 $\pm$ 0.015 \\
+ & fill_norm & 0.838 $\pm$ 0.014 & 0.800 $\pm$ 0.004 & 0.818 $\pm$ 0.012 \\
+ & all & 0.845 $\pm$ 0.018 & 0.821 $\pm$ 0.013 & 0.824 $\pm$ 0.015 \\
+\cline{1-5}
+\multirow[t]{5}{*}{40%} & raw & 0.751 $\pm$ 0.031 & 0.755 $\pm$ 0.034 & 0.747 $\pm$ 0.033 \\
+ & fill & \textbf{0.761 $\pm$ 0.040} & 0.754 $\pm$ 0.032 & \textbf{0.772 $\pm$ 0.044} \\
+ & remove_fill & 0.752 $\pm$ 0.041 & \textbf{0.762 $\pm$ 0.036} & 0.761 $\pm$ 0.032 \\
+ & fill_norm & 0.761 $\pm$ 0.040 & 0.752 $\pm$ 0.020 & \textbf{0.772 $\pm$ 0.044} \\
+ & all & 0.752 $\pm$ 0.041 & 0.759 $\pm$ 0.034 & 0.761 $\pm$ 0.032 \\
+\cline{1-5}
+\multirow[t]{5}{*}{60%} & raw & \textbf{0.601 $\pm$ 0.017} & \textbf{0.645 $\pm$ 0.029} & 0.595 $\pm$ 0.030 \\
+ & fill & 0.583 $\pm$ 0.033 & 0.642 $\pm$ 0.021 & \textbf{0.610 $\pm$ 0.029} \\
+ & remove_fill & 0.573 $\pm$ 0.044 & 0.617 $\pm$ 0.021 & 0.607 $\pm$ 0.037 \\
+ & fill_norm & 0.583 $\pm$ 0.032 & 0.638 $\pm$ 0.016 & \textbf{0.610 $\pm$ 0.029} \\
+ & all & 0.572 $\pm$ 0.043 & 0.633 $\pm$ 0.026 & 0.607 $\pm$ 0.037 \\
+\cline{1-5}
+\bottomrule
+\end{tabular}
+\end{table}

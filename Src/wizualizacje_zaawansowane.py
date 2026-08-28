@@ -3,6 +3,8 @@ import os
 import sys
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -17,7 +19,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from config import DATASETS_ALL, EXPERIMENT_PROFILES
 
 parser = argparse.ArgumentParser(description="Generowanie zaawansowanych wykresów do pracy magisterskiej")
-parser.add_argument("--profile", default="10_50", help="Profil eksperymentu (domyslnie: 10_50)")
+parser.add_argument("--profile", default="full", help="Profil eksperymentu (domyslnie: full)")
 args = parser.parse_args()
 
 PROFILE = EXPERIMENT_PROFILES.get(args.profile)

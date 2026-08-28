@@ -1,0 +1,30 @@
+\begin{table}[htbp]
+\caption{Wyniki testu rangowego Friedmana dla porównania wszystkich metod łącznie}
+\label{tab:test_friedman}
+\begin{tabular}{llrlll}
+\toprule
+Zbiór & Model & Liczba metod & Statystyka $\chi^2$ & p-value & Istotność ($\alpha=0.05$) \\
+\midrule
+diabetes & MLP & 7 & 143.60 & < 0.0001 & \textbf{TAK} \\
+diabetes & NB & 7 & 147.96 & < 0.0001 & \textbf{TAK} \\
+diabetes & RF & 7 & 82.27 & < 0.0001 & \textbf{TAK} \\
+diabetes & XGBoost & 7 & 75.42 & < 0.0001 & \textbf{TAK} \\
+kredyty & MLP & 7 & 124.17 & < 0.0001 & \textbf{TAK} \\
+kredyty & NB & 7 & 188.76 & < 0.0001 & \textbf{TAK} \\
+kredyty & RF & 7 & 11.13 & 0.0844 & NIE \\
+kredyty & XGBoost & 7 & 63.66 & < 0.0001 & \textbf{TAK} \\
+rezygnacje & MLP & 7 & 188.96 & < 0.0001 & \textbf{TAK} \\
+rezygnacje & NB & 7 & 179.47 & < 0.0001 & \textbf{TAK} \\
+rezygnacje & RF & 7 & 37.63 & < 0.0001 & \textbf{TAK} \\
+rezygnacje & XGBoost & 7 & 56.45 & < 0.0001 & \textbf{TAK} \\
+serce & MLP & 7 & 200.58 & < 0.0001 & \textbf{TAK} \\
+serce & NB & 7 & 112.47 & < 0.0001 & \textbf{TAK} \\
+serce & RF & 7 & 47.53 & < 0.0001 & \textbf{TAK} \\
+serce & XGBoost & 7 & 6.32 & 0.3887 & NIE \\
+zapalenia & MLP & 7 & 208.59 & < 0.0001 & \textbf{TAK} \\
+zapalenia & NB & 7 & 209.89 & < 0.0001 & \textbf{TAK} \\
+zapalenia & RF & 7 & 102.72 & < 0.0001 & \textbf{TAK} \\
+zapalenia & XGBoost & 7 & 60.58 & < 0.0001 & \textbf{TAK} \\
+\bottomrule
+\end{tabular}
+\end{table}

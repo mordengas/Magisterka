@@ -1,0 +1,149 @@
+\chapter{Środowisko i zbiory danych}
+
+\section{Wykorzystane narzędzia i biblioteki}
+Całość prac badawczo-implementacyjnych zrealizowano w języku programowania \textbf{Python} (wersja 3.10+), stanowiącym obecnie dominujący standard w inżynierii danych i uczeniu maszynowym \cite{Walker2021}. W projekcie wykorzystano wyspecjalizowany zestaw bibliotek open-source:
+\begin{itemize}
+    \item \textbf{Pandas} \cite{McKinney2010} (wersja 2.x) – wykorzystywana do profilowania danych, identyfikacji brakujących pól, konwersji typów zmiennych oraz operacji tabelarycznych,
+    \item \textbf{NumPy} \cite{Harris2020} – zapewniająca wydajne operacje macierzowe oraz funkcje losowania pseudolosowego z użyciem generatora \texttt{default\_rng},
+    \item \textbf{scikit-learn} \cite{Pedregosa2011} – główny szkielet eksperymentalny; posłużyła do implementacji klasyfikatorów (\texttt{GaussianNB}, \texttt{MLPClassifier}, \texttt{RandomForestClassifier}), procedur podziału stratyfikowanego (\texttt{StratifiedKFold}), transformatorów czyszczących (\texttt{SimpleImputer}, \texttt{KNNImputer}, \texttt{StandardScaler}, \texttt{OneHotEncoder}) oraz obiektów potokowych (\texttt{Pipeline}, \texttt{ColumnTransformer}),
+    \item \textbf{XGBoost} \cite{ChenGuestrin2016} – wysoce zoptymalizowana implementacja algorytmu Extreme Gradient Boosting zintegrowana ze standardem interfejsu \texttt{scikit-learn},
+    \item \textbf{Joblib} – biblioteka służąca do zrównoleglenia powtarzanych procedur walidacji krzyżowej na wielordzeniowych jednostkach obliczeniowych CPU,
+    \item \textbf{Matplotlib} \cite{Hunter2007} oraz \textbf{Seaborn} \cite{Waskom2021} – narzędzia graficzne zastosowane do automatycznego generowania krzywych odporności modeli, macierzy korelacji, wykresów radarowych oraz heatmap zysku $\Delta \mathrm{AUC}$.
+\end{itemize}
+
+\section{Charakterystyka badanych zbiorów danych}
+W badaniach empirycznych wykorzystano pięć zróżnicowanych zbiorów danych tabelarycznych, reprezentujących odmienne domeny zastosowań (medycyna kliniczna, diagnostyka kardiologiczna, telekomunikacja, bankowość). Taki dobór danych pozwolił na weryfikację zachowania metod czyszczenia zarówno na zbiorach o dominacji cech ciągłych, jak i silnie wymieszanych z atrybutami kategorycznymi, a także przy różnym stopniu zrównoważenia klas decyzyjnych. Zbiorcze zestawienie parametrów zbiorów przedstawiono w tabeli~\ref{tab:zbiory_danych}.
+
+\begin{table}[H]
+\centering
+\caption{Zbiorcze zestawienie charakterystyki badanych zbiorów danych}
+\label{tab:zbiory_danych}
+\vspace{0.2cm}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Zbiór danych} & \textbf{Liczba prób} & \textbf{Liczba cech} & \textbf{Cechy ciągłe} & \textbf{Cechy kateg.} & \textbf{Balans klas (0 / 1)} \\
+\midrule
+Zapalenia naczyń      & 848                  & 143                  & 15                    & 128                   & 702 / 146 (82,8\% / 17,2\%)  \\
+Serce (Heart)         & 270                  & 13                   & 5                     & 8                     & 150 / 120 (55,6\% / 44,4\%)  \\
+Cukrzyca (Diabetes)   & 768                  & 8                    & 8                     & 0                     & 500 / 268 (65,1\% / 34,9\%)  \\
+Rezygnacje (Churn)    & 3333                 & 19                   & 15                    & 4                     & 2850 / 483 (85,5\% / 14,5\%) \\
+Kredyty (German)      & 1000                 & 10                   & 3                     & 7                     & 700 / 300 (70,0\% / 30,0\%)  \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Zbiór „Zapalenia naczyń” (Vasculitis)}
+Zbiór ten obejmuje rzeczywiste dane kliniczne pacjentów diagnozowanych i leczonych z powodu układowych zapaleń naczyń (ang. \textit{systemic vasculitis}). Zadaniem klasyfikacyjnym jest predykcja binarnej zmiennej decyzyjnej \texttt{Zgon} (0 – przeżycie pacjenta, 1 – zgon). Zgodnie z recepturami wstępnego profilowania danych \cite{Walker2021}, wykluczono techniczny identyfikator pacjenta (\texttt{Kod}). Pozostałe 143 atrybuty wejściowe obejmują:
+\begin{itemize}
+    \item \textbf{Wskaźniki ciągłe (15 cech)}: wiek pacjenta w latach (\texttt{Wiek}), wiek w chwili postawienia diagnozy (\texttt{Wiek\_rozpoznania}), czas opóźnienia rozpoznania (\texttt{Opoznienie\_Rozpoznia}), wskaźnik palenia tytoniu w paczkolatach (\texttt{Paczkolata}), liczba narządów objętych aktywnym procesem chorobowym (\texttt{Liczba\_Zajetych\_Narzadow}), liczba zaostrzeń choroby (\texttt{Liczba\_Zaostrzen}), czas do wystąpienia pierwszego zaostrzenia (\texttt{Czas\_Pierwsze\_Zaostrzenie}), stężenie kreatyniny w surowicy (\texttt{Kreatynina}), maksymalne stężenie białka C-reaktywnego (\texttt{Max\_CRP}), łączne dawki glikokortykosteroidów (\texttt{Sterydy\_Dawka\_g}, \texttt{Sterydy\_Dawka\_mg}), całkowity czas trwania sterydoterapii (\texttt{Czas\_Sterydow}) oraz miana przeciwciał i markerów immunologicznych (\texttt{Anti-PR3\_Wartosc}, \texttt{Anti-MPO\_Wartosc}, \texttt{Eozynofilia\_Krwi\_Obwodowej\_Wartosc}).
+    \item \textbf{Wskaźniki jakościowe i binarne (128 cech)}: płeć, specyficzne rozpoznania kliniczne (np. GPA, EGPA, MPA, choroba Takayasu, choroba Kawasakiego), manifestacje narządowe (płucne, sercowo-naczyniowe, nerkowe, laryngologiczne, ośrodkowego układu nerwowego), wyniki biopsji tkankowych oraz schematy farmakoterapii (cyklofosfamid, rituximab, mykofenolan mofetylu, azatiopryna, metotreksat).
+\end{itemize}
+
+\subsection{Zbiór „Serce” (Heart Disease)}
+Klasyczny zbiór referencyjny pochodzący ze zbiorów UCI Machine Learning Repository \cite{DuaGraff2017} (baza Statlog/Cleveland). Zadaniem jest rozpoznanie obecności istotnych zmian miażdżycowych w naczyniach wieńcowych (\texttt{diagnoza}: 0 – brak choroby, 1 – choroba serca). Zbiór zawiera 13 cech diagnostycznych:
+\begin{itemize}
+    \item \textbf{Cechy ciągłe (5 atrybutów)}: wiek pacjenta (\texttt{wiek}), spoczynkowe ciśnienie tętnicze krwi (\texttt{cisnienie\_krwi\_spoczynek}), stężenie cholesterolu całkowitego w surowicy (\texttt{cholesterol\_we\_krwi}), maksymalna częstość akcji serca osiągnięta w trakcie próby wysiłkowej (\texttt{ilosc\_uderzen\_serca}) oraz obniżenie odcinka ST wywołane wysiłkiem fizycznym (\texttt{max\_obnizka\_st}).
+    \item \textbf{Cechy kategoryczne (8 atrybutów)}: płeć (\texttt{plec}), typ dolegliwości bólowych w klatce piersiowej (\texttt{typ\_bolu\_klatka}), stężenie glukozy na czczo powyżej 120 mg/dl (\texttt{cukier\_we\_krwi}), spoczynkowy wynik elektrokardiogramu (\texttt{wynik\_ekg\_spoczynek}), dławica piersiowa wywołana wysiłkiem (\texttt{bol\_klatka\_wysilek}), nachylenie odcinka ST na szczycie wysiłku (\texttt{przebieg\_st\_szczyt}), liczba głównych naczyń zabarwionych podczas fluoroskopii (\texttt{zwapnienia\_miazdzycowe}) oraz wynik scyntygrafii perfuzyjnej mięśnia sercowego (\texttt{proba\_ta}).
+\end{itemize}
+
+\subsection{Zbiór „Diabetes” (Pima Indians Diabetes)}
+Zbiór pochodzący z repozytorium UCI \cite{DuaGraff2017}, służący do prognozowania wystąpienia cukrzycy u kobiet z populacji Indian Pima na podstawie parametrów fizjologicznych i biochemicznych. Zmienna celu (\texttt{decision}) przyjmuje wartości binarne (0 – brak cukrzycy, 1 – potwierdzona cukrzyca). Wszystkie 8 atrybutów wejściowych ma charakter ciągły:
+\begin{itemize}
+    \item liczba przebytych ciąż (\texttt{preg}),
+    \item stężenie glukozy w osoczu krwi po doustnym teście tolerancji glukozy (\texttt{plas}),
+    \item rozkurczowe ciśnienie tętnicze krwi (\texttt{pres}),
+    \item grubość fałdu skórno-tłuszczowego na mięśniu trójgłowym ramienia (\texttt{skin}),
+    \item 2-godzinne stężenie insuliny w surowicy (\texttt{insu}),
+    \item wskaźnik masy ciała BMI (\texttt{mass}),
+    \item wskaźnik obciążenia genetycznego rodowodem cukrzycy (\texttt{pedi}),
+    \item wiek pacjentki w latach (\texttt{age}).
+\end{itemize}
+
+\subsection{Zbiór „Rezygnacje” (Customer Churn)}
+Zbiór danych pochodzący z sektora telekomunikacyjnego, wykorzystywany do detekcji zjawiska migracji klientów (ang. \textit{customer churn}). Zadaniem klasyfikacyjnym jest predykcja binarnej decyzji klienta o rezygnacji z usług operatora (\texttt{REZYGN}: 0 – lojalny klient, 1 – odejście do konkurencji). Po wykluczeniu numeru telefonu klienta (\texttt{NR\_TEL}), zestaw zawiera:
+\begin{itemize}
+    \item \textbf{Cechy ciągłe (15 atrybutów)}: czas trwania umowy w miesiącach (\texttt{CZAS\_POSIADANIA}), liczba odsłuchanych wiadomości poczty głosowej (\texttt{L\_WIAD\_POCZTA\_G}), łączna liczba minut, liczba połączeń oraz naliczona opłata w strefie dziennej (\texttt{DZIEN\_MIN}, \texttt{DZIEN\_L\_POL}, \texttt{DZIEN\_OPLATA}), strefie wieczornej (\texttt{WIECZOR\_MIN}, \texttt{WIECZ\_L\_POL}, \texttt{WIECZ\_OPLATA}), strefie nocnej (\texttt{NOC\_MIN}, \texttt{NOC\_L\_POL}, \texttt{NOC\_OPLATA}), strefie połączeń międzynarodowych (\texttt{MIEDZY\_MIN}, \texttt{MIEDZY\_L\_POL}, \texttt{MIEDZY\_OPLATA}) oraz liczba kontaktów z biurem obsługi klienta (\texttt{L\_POL\_BIURO}).
+    \item \textbf{Cechy kategoryczne (4 atrybuty)}: kod stanu zamieszkania (\texttt{STAN}), numer kierunkowy obszaru (\texttt{KOD\_OBSZARU}), aktywność międzynarodowego planu taryfowego (\texttt{PLAN\_MIEDZY}) oraz aktywność usługi poczty głosowej (\texttt{POCZTA\_G}).
+\end{itemize}
+
+\subsection{Zbiór „Kredyty” (German Credit)}
+Klasyczny zbiór oceny ryzyka kredytowego (ang. \textit{credit scoring}) z repozytorium UCI \cite{DuaGraff2017} (Statlog German Credit). Zadaniem jest klasyfikacja wiarygodności finansowej klienta wnioskującego o pożyczkę (\texttt{Kredyt}: \texttt{good} $\rightarrow 0$ – niski poziom ryzyka, \texttt{bad} $\rightarrow 1$ – wysokie ryzyko niewypłacalności). Zbiór charakteryzuje się silną obecnością atrybutów jakościowych:
+\begin{itemize}
+    \item \textbf{Cechy ciągłe (3 atrybuty)}: czas trwania bieżącego rachunku lub wnioskowanej pożyczki w miesiącach (\texttt{Czas\_trwania\_konta}), całkowita kwota wnioskowanego kredytu (\texttt{Kwota\_kredytu}) oraz wiek klienta w latach (\texttt{Wiek}).
+    \item \textbf{Cechy kategoryczne (7 atrybutów)}: deklarowany cel pożyczki (\texttt{Cel\_kredytu}), staż pracy i czas zatrudnienia (\texttt{Czas\_zatrudnienia}), płeć powiązana ze stanem cywilnym (\texttt{Plec\_i\_stan\_cywilny}), czas zamieszkiwania pod obecnym adresem (\texttt{Czas\_od\_zamieszkania}), liczba spłacanych kredytów w banku (\texttt{Liczba\_kredytow\_w\_banku}), status zawodowy (\texttt{Praca}) oraz liczba osób pozostających na utrzymaniu pożyczkobiorcy (\texttt{Liczb\_osob\_na\_utrzymaniu}).
+\end{itemize}
+
+\section{Metodologia symulacji kontrolowanych zanieczyszczeń}
+W celu rzetelnej, ilościowej oceny skuteczności poszczególnych receptur czyszczenia danych, zbiory oryginalne poddano kontrolowanej procedurze sztucznego wprowadzania zaburzeń. W eksperymentach zdefiniowano pięć rosnących poziomów degradacji: $p \in \{10\%, 20\%, 30\%, 40\%, 50\%\}$. Każdy poziom generowano w 3 niezależnych powtórzeniach losowych z wykorzystaniem generatora liczb pseudolosowych \texttt{numpy.random.default\_rng}.
+
+Zgodnie z systematyką problemów jakości danych opisaną przez Walkera \cite{Walker2021}, wprowadzono trzy typy zanieczyszczeń:
+\begin{enumerate}
+    \item \textbf{Braki danych (ang. \textit{missing data})}: losowe usuwanie wartości w kolumnach z prawdopodobieństwem $p$, zastępując je wartością \texttt{NaN} (symulacja mechanizmu braków całkowicie przypadkowych MCAR).
+    \item \textbf{Ekstremalne wartości odstające (ang. \textit{extreme outliers})}: losowy wybór obserwacji w liczbie proporcjonalnej do poziomu degradacji i ich modyfikacja poprzez drastyczne mnożniki:
+    \begin{equation}
+    x_{\text{dirty}} = x \cdot c, \quad c \in \{20, 40, 80, -20\}.
+    \end{equation}
+    Zabieg ten odzwierciedla błędy grube aparatury pomiarowej, pomyłki skali lub błędne jednostki metryczne \cite{Walker2021}.
+    \item \textbf{Szum w zmiennych kategorycznych}: losowe wstrzykiwanie rzadkiej, nieprawidłowej wartości \texttt{"9"}, symulującej błędne kody kategorii lub usterki systemów ankietowych.
+\end{enumerate}
+
+\section{Architektura potoku przetwarzania i uzasadnienie doboru strategii}
+Wszystkie operacje przetwarzania danych zorganizowano w postaci modularnych obiektów \texttt{Pipeline} oraz \texttt{ColumnTransformer} z biblioteki \texttt{scikit-learn}. Podejście to, rekomendowane przez Walkera \cite{Walker2021}, gwarantuje całkowitą hermetyzację transformacji — parametry czyszczenia (progi IQR, mediany, średnie, parametry skalarów) są wyznaczane wyłącznie w fazie \texttt{fit} na podzbiorze uczącym, a następnie aplikowane do podzbioru testowego (\texttt{transform}), co eliminuje błąd wycieku danych (\textit{data leakage}).
+
+\subsection{Trzy filary przetwarzania wstępnego}
+W badaniach nad jakością klasyfikatorów tabelarycznych wyodrębniono trzy fundamentalne operacje inżynierii danych:
+\begin{enumerate}
+    \item \textbf{$O_1$ – Eliminacja i obsługa wartości odstających}: identyfikacja anomalii regułą rozstępu międzykwartylowego ($3 \cdot \mathrm{IQR}$) i ich konwersja do braków danych (\texttt{NaN}) przez autorski transformator \texttt{OutlierToNaNTransformer}.
+    \item \textbf{$O_2$ – Imputacja braków danych}: rekonstrukcja wartości brakujących za pomocą estymatorów statystycznych (mediana/dominanta) lub algorytmu $k$-najbliższych sąsiadów (\texttt{KNNImputer}, $k=5$).
+    \item \textbf{$O_3$ – Standaryzacja i kodowanie cech}: przekształcenie $z$-score ($\mu=0, \sigma=1$) za pomocą \texttt{StandardScaler} oraz binarne kodowanie cech kategorycznych (\texttt{OneHotEncoder}) po uprzedniej filtracji rzadkich poziomów (\texttt{RareCategoryToNaNTransformer}).
+\end{enumerate}
+
+\subsection{Redukcja pełnego planu czynnikowego ($2^3 = 8$) do zestawu strategii praktycznych}
+Początkowy plan badawczy zakładał pełny układ kombinatoryczny $2^3 = 8$ metod:
+\begin{equation}
+\mathcal{S}_{\text{pełny}} = \{\text{raw}, \text{norm}, \text{fill}, \text{remove}, \text{remove\_fill}, \text{remove\_norm}, \text{fill\_norm}, \text{all}\}.
+\end{equation}
+W toku analizy metodologicznej zidentyfikowano jednak krytyczne wady wariantów pozbawionych kroku imputacji ($\text{fill}$):
+\begin{itemize}
+    \item \textbf{Problem sztucznej stałej w metodzie \texttt{remove}}: W operacji \texttt{remove} wykryte anomalie zamieniane są na \texttt{NaN}. Brak późniejszego etapu rekonstrukcji wymusza zastąpienie braków techniczną wartością stałą (np. $-999{,}0$), aby umożliwić działanie klasyfikatorów. Procedura ta de facto tworzy nową, skrajną wartość odstającą, negując sens eliminacji anomalii.
+    \item \textbf{Zniekształcenie parametrów rozkładu w metodzie \texttt{norm}}: Standaryzacja cech w obecności nieskorygowanych wartości odstających prowadzi do błędnej estymacji średniej $\hat{\mu}$ oraz drastycznego zawyżenia odchylenia standardowego $\hat{\sigma}$. W rezultacie typowe wartości cech ulegają sztucznej kompresji blisko zera.
+\end{itemize}
+
+Z tego względu przestrzeń badawcza została zoptymalizowana i rozszerzona o bezpośrednie porównanie paradygmatów imputacji (statystyczna vs sąsiedztwa KNN), tworząc zestaw 7 komplementarnych strategii badawczych zestawionych w tabeli~\ref{tab:strategie_czyszczenia}.
+
+\begin{table}[H]
+\centering
+\caption{Zestawienie badanych strategii czyszczenia danych w potokach przetwarzania}
+\label{tab:strategie_czyszczenia}
+\vspace{0.2cm}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lll}
+\toprule
+\textbf{Kod strategii} & \textbf{Składowe potoku (Pipeline)} & \textbf{Uzasadnienie i rola badawcza} \\
+\midrule
+\textbf{\texttt{raw}}         & Brak operacji (maskowanie $-999$)         & Punkt odniesienia (\textit{baseline}) – degradacja bez interwencji. \\
+\textbf{\texttt{fill}}        & Imputacja medianą i dominantą             & Wpływ samej prostej rekonstrukcji braków. \\
+\textbf{\texttt{fill\_knn}}   & Imputacja $k$-NN ($k=5$)                  & Wpływ wielowymiarowej rekonstrukcji opartej na sąsiedztwie. \\
+\textbf{\texttt{remove\_fill}}& Outliery ($3 \cdot \mathrm{IQR}$) $\to$ Mediana & Dwuetapowa korekcja: oczyszczenie rozkładu przed imputacją. \\
+\textbf{\texttt{fill\_norm}}  & Mediana $\to$ Standaryzacja $z$-score     & Wpływ skalowania na poprawnie zaimputowanych danych. \\
+\textbf{\texttt{all}}         & Outliery $\to$ Mediana $\to$ Standaryzacja & Pełny klasyczny potok inżynierii danych \cite{Walker2021}. \\
+\textbf{\texttt{all\_knn}}    & Outliery $\to$ $k$-NN $\to$ Standaryzacja  & Zaawansowany potok łączący filtrację z modelowaniem $k$-NN. \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\section{Protokół eksperymentalny i parametryzacja klasyfikatorów}
+W celu uzyskania odpornych i statystycznie istotnych wyników zastosowano procedurę powtarzanej stratyfikowanej walidacji krzyżowej (\textit{Repeated Stratified K-Fold}) z podziałem na 4 lub 5 foldów i ewaluacją na 3–5 niezależnych ziarnach losowości.
+
+Dla każdego podziału ewaluowano 4 klasyfikatory o ustalonej parametryzacji:
+\begin{itemize}
+    \item \textbf{Random Forest (RF)}: \texttt{n\_estimators=220}, \texttt{random\_state=seed}.
+    \item \textbf{Gaussian Naive Bayes (NB)}: model probabilistyczny z domyślną estymacją parametrów rozkładu normalnego.
+    \item \textbf{Perceptron Wielowarstwowy (MLP)}: sieć o architekturze z jedną warstwą ukrytą (100 neuronów, aktywacja ReLU, optymalizator Adam, wczesne zatrzymanie \texttt{early\_stopping=True}, \texttt{n\_iter\_no\_change=15}).
+    \item \textbf{XGBoost}: \texttt{n\_estimators=180}, \texttt{max\_depth=4}, \texttt{learning\_rate=0.07}, \texttt{subsample=0.9}, \texttt{colsample\_bytree=0.9}, funkcja straty \texttt{logloss}.
+\end{itemize}
+
+Jako główną miarę ewaluacji przyjęto średnią arytmetyczną pola pod krzywą ROC ($\overline{\mathrm{AUC}}$) oraz odchylenie standardowe $\sigma_{\mathrm{AUC}}$ liczone po wszystkich foldach i powtórzeniach walidacji.

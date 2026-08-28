@@ -1,0 +1,10 @@
+\chapter*{ZAKOŃCZENIE}
+\addcontentsline{toc}{chapter}{\protect\hspace{0.45cm} ZAKOŃCZENIE}
+
+Przeprowadzone w niniejszej pracy magisterskiej badania pozwoliły na całościową, empiryczną i teoretyczną ocenę wpływu procedur wstępnego przetwarzania i czyszczenia danych na jakość działania współczesnych algorytmów uczenia maszynowego. W obliczu dynamicznego rozwoju systemów sztucznej inteligencji, praca ta dostarcza istotnych dowodów na to, że inżynieria danych i właściwa obsługa zanieczyszczeń stanowią warunek konieczny dla budowy bezpiecznych i wiarygodnych modeli predykcyjnych, szczególnie w domenach o podwyższonym ryzyku, takich jak medycyna kliniczna.
+
+W toku zrealizowanych eksperymentów wykazano, że bezrefleksyjne stosowanie modeli uczenia maszynowego na danych zanieczyszczonych prowadzi do drastycznego spadku ich zdolności dyskryminacyjnych. Jednocześnie udowodniono, że odpowiednio zaprojektowany, wieloetapowy potok przetwarzania — łączący filtrację ekstremalnych wartości odstających za pomocą reguły rozstępu międzykwartylowego, imputację braków danych oraz standaryzację cech — pozwala na niemal całkowite zniwelowanie negatywnych skutków degradacji danych wejściowych nawet przy 50-procentowym nasileniu anomalii.
+
+Zgromadzony materiał badawczy, poparty rygorystyczną analizą statystyczną (testami rangowymi Friedmana i Wilcoxona), potwierdził fundamentalną asymetrię wrażliwości pomiędzy badanymi klasyfikatorami. Wykazano, że podczas gdy modele drzewiaste (Random Forest i XGBoost) cechują się naturalną, wysoką odpornością na brak skalowania i obecność szumu, to klasyfikatory oparte na optymalizacji gradientowej (MLP) oraz estymacji gęstości prawdopodobieństwa (Gaussian Naive Bayes) wymagają bezwzględnego wdrożenia dedykowanych procedur czyszczących, osiągając dzięki nim spektakularne zyski predykcyjne.
+
+Opracowany w ramach pracy modularny kod źródłowy w języku Python oraz zaimplementowane transformatory mogą posłużyć jako gotowy punkt wyjścia do budowy zautomatyzowanych potoków inżynierii danych w rzeczywistych wdrożeniach analitycznych.

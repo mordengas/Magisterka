@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -8,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from config import DATASETS_ALL
+from config import DATASETS_ALL, EXPERIMENT_PROFILES
 from Src.cleaning_methods import apply_strategy_globally
 
 
@@ -24,9 +25,6 @@ METHODS = [
     ("all", "7_all"),
 ]
 
-DAMAGE_LEVELS = [20, 40, 60]
-DAMAGE_REPEATS = [1, 2, 3, 4, 5]
-
 
 def iter_dirty_files(dataset_name, damage_level, damage_repeat):
     repeated_path = f"Data/{dataset_name}/{dataset_name}_prob_{damage_level}_r{damage_repeat}.csv"
@@ -40,13 +38,21 @@ def iter_dirty_files(dataset_name, damage_level, damage_repeat):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--profile", default="full", choices=list(EXPERIMENT_PROFILES.keys()))
+    args = parser.parse_args()
+    
+    profile = EXPERIMENT_PROFILES[args.profile]
+    damage_levels = profile['damage_levels']
+    damage_repeats = profile['damage_repeats']
+
     print("Tworzenie pomocniczych plikow po czyszczeniu.")
     print("Uwaga: te pliki sa tylko do inspekcji i wizualnej kontroli.")
     print("Wlasciwa ewaluacja nadal powinna byc wykonywana wewnatrz CV.")
 
     for dataset in DATASETS:
-        for damage_level in DAMAGE_LEVELS:
-            for damage_repeat in DAMAGE_REPEATS:
+        for damage_level in damage_levels:
+            for damage_repeat in damage_repeats:
                 source_path = iter_dirty_files(dataset["name"], damage_level, damage_repeat)
                 if source_path is None:
                     continue

@@ -1,0 +1,32 @@
+\begin{table}[htbp]
+\caption{Średnie wartości AUC $\pm$ odchylenie standardowe dla zbioru \textbf{Rezygnacje}}
+\label{tab:wyniki_rezygnacje}
+\begin{tabular}{llccc}
+\toprule
+ &  & RF & NB & XGBoost \\
+Uszkodzenie & Metoda &  &  &  \\
+\midrule
+\multirow[t]{2}{*}{ORYGINALNY} & original & - & - & - \\
+ & raw & 0.911 $\pm$ 0.001 & 0.652 $\pm$ 0.001 & 0.912 $\pm$ 0.000 \\
+\cline{1-5}
+\multirow[t]{5}{*}{20%} & raw & 0.794 $\pm$ 0.010 & 0.601 $\pm$ 0.019 & 0.806 $\pm$ 0.008 \\
+ & fill & \textbf{0.802 $\pm$ 0.009} & 0.603 $\pm$ 0.018 & 0.805 $\pm$ 0.007 \\
+ & remove_fill & 0.800 $\pm$ 0.004 & \textbf{0.764 $\pm$ 0.014} & \textbf{0.810 $\pm$ 0.005} \\
+ & fill_norm & \textbf{0.802 $\pm$ 0.009} & 0.569 $\pm$ 0.023 & 0.805 $\pm$ 0.007 \\
+ & all & 0.800 $\pm$ 0.004 & \textbf{0.764 $\pm$ 0.014} & \textbf{0.810 $\pm$ 0.005} \\
+\cline{1-5}
+\multirow[t]{5}{*}{40%} & raw & 0.683 $\pm$ 0.012 & 0.607 $\pm$ 0.010 & \textbf{0.706 $\pm$ 0.007} \\
+ & fill & 0.691 $\pm$ 0.021 & 0.604 $\pm$ 0.011 & 0.704 $\pm$ 0.012 \\
+ & remove_fill & 0.681 $\pm$ 0.003 & 0.609 $\pm$ 0.004 & 0.685 $\pm$ 0.012 \\
+ & fill_norm & \textbf{0.691 $\pm$ 0.021} & 0.538 $\pm$ 0.023 & 0.704 $\pm$ 0.012 \\
+ & all & 0.681 $\pm$ 0.003 & \textbf{0.610 $\pm$ 0.004} & 0.685 $\pm$ 0.012 \\
+\cline{1-5}
+\multirow[t]{5}{*}{60%} & raw & 0.587 $\pm$ 0.009 & 0.570 $\pm$ 0.002 & 0.612 $\pm$ 0.014 \\
+ & fill & 0.590 $\pm$ 0.011 & \textbf{0.574 $\pm$ 0.002} & \textbf{0.621 $\pm$ 0.009} \\
+ & remove_fill & 0.574 $\pm$ 0.008 & 0.551 $\pm$ 0.005 & 0.610 $\pm$ 0.009 \\
+ & fill_norm & \textbf{0.591 $\pm$ 0.011} & 0.503 $\pm$ 0.009 & \textbf{0.621 $\pm$ 0.009} \\
+ & all & 0.574 $\pm$ 0.007 & 0.553 $\pm$ 0.007 & 0.610 $\pm$ 0.009 \\
+\cline{1-5}
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,6 +1,8 @@
 import argparse
 import sys
 from pathlib import Path
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -14,7 +16,7 @@ from config import EXPERIMENT_PROFILES
 import numpy as np
 
 parser = argparse.ArgumentParser(description="Wizualizacja wyników eksperymentu")
-parser.add_argument("--profile", default="10_50", help="Profil eksperymentu")
+parser.add_argument("--profile", default="full", help="Profil eksperymentu")
 parser.add_argument("--ylim-min", type=float, default=None, help="Minimalna wartosc osi Y dla AUC (domyslnie: automatycznie)")
 parser.add_argument("--ylim-max", type=float, default=1.0, help="Maksymalna wartosc osi Y dla AUC (domyslnie: 1.0)")
 args = parser.parse_args()

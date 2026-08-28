@@ -21,7 +21,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from config import EXPERIMENT_PROFILES, PARALLEL_JOBS, CUDA_DEVICE, USE_CUDA
+from config import EXPERIMENT_PROFILES, PARALLEL_JOBS, MODEL_PARAMS, get_cuda_device, use_cuda
 from Src.cleaning_methods import build_cleaning_pipeline
 
 
@@ -32,39 +32,28 @@ PROFILE = {}
 
 
 def get_estimator(model_name, random_state):
+    params = MODEL_PARAMS.get(model_name, {}).copy()
+
     if model_name == "RF":
         return RandomForestClassifier(
-            n_estimators=220,
             random_state=random_state,
-            n_jobs=1,
+            **params,
         )
 
     if model_name == "NB":
-        return GaussianNB()
+        return GaussianNB(**params)
 
     if model_name == "MLP":
         return MLPClassifier(
-            hidden_layer_sizes=(100,),
-            max_iter=500,
-            early_stopping=True,
-            n_iter_no_change=15,
             random_state=random_state,
+            **params,
         )
 
     if model_name == "XGBoost":
-        xgb_kwargs = {
-            "n_estimators": 180,
-            "max_depth": 4,
-            "learning_rate": 0.07,
-            "subsample": 0.9,
-            "colsample_bytree": 0.9,
-            "eval_metric": "logloss",
-            "random_state": random_state,
-            "n_jobs": 1,
-        }
-        if USE_CUDA:
+        xgb_kwargs = {**params, "random_state": random_state}
+        if use_cuda():
             xgb_kwargs["tree_method"] = "hist"
-            xgb_kwargs["device"] = CUDA_DEVICE
+            xgb_kwargs["device"] = get_cuda_device()
 
         return xgb.XGBClassifier(**xgb_kwargs)
 
@@ -281,9 +270,9 @@ def main():
     parser.add_argument(
         "--profile",
         type=str,
-        default="10_50",
+        default="full",
         choices=list(EXPERIMENT_PROFILES.keys()),
-        help="Profil eksperymentu (domyslnie: 10_50)",
+        help="Profil eksperymentu (domyslnie: full)",
     )
     args = parser.parse_args()
 

@@ -1,0 +1,32 @@
+\begin{table}[htbp]
+\caption{Średnie wartości AUC $\pm$ odchylenie standardowe dla zbioru \textbf{Diabetes}}
+\label{tab:wyniki_diabetes}
+\begin{tabular}{llccc}
+\toprule
+ &  & RF & NB & XGBoost \\
+Uszkodzenie & Metoda &  &  &  \\
+\midrule
+\multirow[t]{2}{*}{ORYGINALNY} & original & - & - & - \\
+ & raw & 0.828 $\pm$ 0.003 & 0.811 $\pm$ 0.003 & 0.813 $\pm$ 0.004 \\
+\cline{1-5}
+\multirow[t]{5}{*}{20%} & raw & 0.741 $\pm$ 0.012 & 0.543 $\pm$ 0.011 & 0.743 $\pm$ 0.010 \\
+ & fill & 0.751 $\pm$ 0.015 & 0.541 $\pm$ 0.012 & 0.744 $\pm$ 0.011 \\
+ & remove_fill & \textbf{0.761 $\pm$ 0.007} & \textbf{0.720 $\pm$ 0.011} & \textbf{0.755 $\pm$ 0.010} \\
+ & fill_norm & 0.751 $\pm$ 0.015 & 0.541 $\pm$ 0.012 & 0.744 $\pm$ 0.011 \\
+ & all & 0.761 $\pm$ 0.007 & \textbf{0.720 $\pm$ 0.011} & \textbf{0.755 $\pm$ 0.010} \\
+\cline{1-5}
+\multirow[t]{5}{*}{40%} & raw & \textbf{0.660 $\pm$ 0.022} & \textbf{0.536 $\pm$ 0.021} & \textbf{0.684 $\pm$ 0.011} \\
+ & fill & 0.651 $\pm$ 0.030 & 0.534 $\pm$ 0.019 & 0.674 $\pm$ 0.018 \\
+ & remove_fill & 0.641 $\pm$ 0.016 & 0.526 $\pm$ 0.016 & 0.664 $\pm$ 0.016 \\
+ & fill_norm & 0.652 $\pm$ 0.031 & 0.534 $\pm$ 0.019 & 0.674 $\pm$ 0.018 \\
+ & all & 0.642 $\pm$ 0.016 & 0.526 $\pm$ 0.016 & 0.664 $\pm$ 0.016 \\
+\cline{1-5}
+\multirow[t]{5}{*}{60%} & raw & 0.606 $\pm$ 0.007 & \textbf{0.565 $\pm$ 0.017} & 0.633 $\pm$ 0.011 \\
+ & fill & 0.618 $\pm$ 0.013 & 0.565 $\pm$ 0.017 & 0.647 $\pm$ 0.013 \\
+ & remove_fill & 0.615 $\pm$ 0.009 & 0.551 $\pm$ 0.014 & \textbf{0.650 $\pm$ 0.009} \\
+ & fill_norm & \textbf{0.618 $\pm$ 0.014} & 0.565 $\pm$ 0.017 & 0.647 $\pm$ 0.013 \\
+ & all & 0.615 $\pm$ 0.009 & 0.551 $\pm$ 0.014 & \textbf{0.650 $\pm$ 0.009} \\
+\cline{1-5}
+\bottomrule
+\end{tabular}
+\end{table}

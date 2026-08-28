@@ -18,6 +18,14 @@ def make_one_hot_encoder():
 
 
 class OutlierToNaNTransformer(BaseEstimator, TransformerMixin):
+    """Zamienia wartości odstające na NaN na podstawie metody IQR.
+
+    Parametry domyślne uzasadnione literaturą:
+        iqr_multiplier=3.0 — szeroki zakres (vs typowe 1.5), by usuwać
+            tylko skrajne outlier'y, nie normalne wartości brzegowe.
+        min_unique=10 — kolumny z <10 unikalnymi wartościami traktowane
+            jako kategoryczne (pomijane w detekcji outlierów IQR).
+    """
     def __init__(self, numeric_columns=None, iqr_multiplier=3.0, min_unique=10):
         self.numeric_columns = numeric_columns or []
         self.iqr_multiplier = iqr_multiplier
@@ -133,45 +141,38 @@ def build_cleaning_pipeline(X, method_name, continuous_columns=None, categorical
                 ("remove_rare_categories", RareCategoryToNaNTransformer(categorical_columns=cat_columns))
             )
 
-    numeric_imputer_strategy = "constant"
-    categorical_imputer_strategy = "constant"
-    numeric_fill_value = -999.0
-    categorical_fill_value = "MISSING"
-
-    if method_name in {"fill", "fill_norm", "remove_fill", "all", "fill_knn", "all_knn"}:
-        numeric_imputer_strategy = "median"
-        categorical_imputer_strategy = "most_frequent"
-        numeric_fill_value = None
-        categorical_fill_value = None
+    # Dla metod bez imputacji (np. "raw", "norm", "remove"):
+    # - kolumny numeryczne zachowują NaN (lub są skalowane przez StandardScaler)
+    # - kolumny kategoryczne brakujące wartości oznaczają jako "MISSING"
+    # Dla metod z imputacją ("fill", "all", itp.):
+    # - numeryczne uzupełniane medianą lub KNN
+    # - kategoryczne uzupełniane dominantą (most_frequent)
+    do_imputation = method_name in {"fill", "fill_norm", "remove_fill", "all", "fill_knn", "all_knn"}
 
     numeric_steps = [
-        ("to_float", FunctionTransformer(lambda x: x.astype(float), validate=False)),
+        ("to_float", FunctionTransformer(lambda x: x.astype(float), validate=False, feature_names_out="one-to-one")),
     ]
     if method_name in {"fill_knn", "all_knn"}:
         numeric_steps.append(("imputer", KNNImputer(n_neighbors=5)))
-    elif numeric_imputer_strategy == "constant":
-        numeric_steps.append(
-            ("imputer", SimpleImputer(strategy="constant", fill_value=numeric_fill_value))
-        )
-    else:
-        numeric_steps.append(("imputer", SimpleImputer(strategy=numeric_imputer_strategy)))
+    elif do_imputation:
+        numeric_steps.append(("imputer", SimpleImputer(strategy="median")))
 
     if method_name in {"norm", "fill_norm", "remove_norm", "all", "all_knn"}:
         numeric_steps.append(("scaler", StandardScaler()))
 
     categorical_steps = [
-        ("to_obj", FunctionTransformer(lambda x: x.astype(object), validate=False)),
+        ("to_obj", FunctionTransformer(lambda x: x.astype(object), validate=False, feature_names_out="one-to-one")),
     ]
-    if categorical_imputer_strategy == "constant":
-        categorical_steps.append(
-            ("imputer", SimpleImputer(strategy="constant", fill_value=categorical_fill_value))
-        )
+    if do_imputation:
+        categorical_steps.append(("imputer", SimpleImputer(strategy="most_frequent")))
     else:
-        categorical_steps.append(("imputer", SimpleImputer(strategy=categorical_imputer_strategy)))
+        categorical_steps.append(
+            ("imputer", SimpleImputer(strategy="constant", fill_value="MISSING"))
+        )
 
     # Konwersja na string przed OneHotEncoder zapobiega błędowi mieszanych typów (float + str)
     categorical_steps.append(
-        ("to_str", FunctionTransformer(lambda x: x.astype(str), validate=False))
+        ("to_str", FunctionTransformer(lambda x: x.astype(str), validate=False, feature_names_out="one-to-one"))
     )
     categorical_steps.append(("encoder", make_one_hot_encoder()))
 

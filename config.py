@@ -2,19 +2,37 @@ import os
 import numpy as np
 
 
+# ---------------------------------------------------------------------------
+# CUDA / GPU — lazy evaluation (wywoływane dopiero przy pierwszym użyciu)
+# ---------------------------------------------------------------------------
+_cuda_device = None
+
+
 def detect_cuda_device():
+    global _cuda_device
+    if _cuda_device is not None:
+        return _cuda_device
     try:
         import xgboost as xgb
         clf = xgb.XGBClassifier(tree_method="hist", device="cuda", n_estimators=1)
         clf.fit(np.zeros((2, 2)), np.array([0, 1]))
-        return "cuda"
+        _cuda_device = "cuda"
     except Exception:
-        return "cpu"
+        _cuda_device = "cpu"
+    return _cuda_device
 
 
-CUDA_DEVICE = detect_cuda_device()
-USE_CUDA = (CUDA_DEVICE == "cuda")
+def get_cuda_device():
+    return detect_cuda_device()
 
+
+def use_cuda():
+    return detect_cuda_device() == "cuda"
+
+
+# ---------------------------------------------------------------------------
+# Definicje zbiorów danych
+# ---------------------------------------------------------------------------
 DATASETS_ALL = [
     {
         "name": "zapalenia",
@@ -143,19 +161,40 @@ DATASETS_ALL = [
 
 DATASETS_NO_ZAPALENIA = [ds for ds in DATASETS_ALL if ds["name"] != "zapalenia"]
 
-EXPERIMENT_PROFILES = {
-    "full": {
-        "datasets": DATASETS_ALL,
-        "methods": ["raw", "norm", "fill", "remove", "remove_fill", "remove_norm", "fill_norm", "all"],
-        "models": ["RF", "NB", "MLP", "XGBoost"],
-        "damage_levels": [20, 40, 60],
-        "damage_repeats": [1, 2, 3, 4, 5],
-        "cv_states": [101, 202, 303, 404, 505],
-        "cv_folds": 5,
-        "output_suffix": "",
-        "dirty_file_pattern": "{name}_prob_{level}_r{repeat}.csv",
+
+# ---------------------------------------------------------------------------
+# Hiperparametry modeli klasyfikacyjnych (centralna definicja)
+# ---------------------------------------------------------------------------
+MODEL_PARAMS = {
+    "RF": {
+        "n_estimators": 220,
+        "n_jobs": 1,
     },
-    "10_50": {
+    "NB": {},
+    "MLP": {
+        "hidden_layer_sizes": (100,),
+        "max_iter": 500,
+        "early_stopping": True,
+        "n_iter_no_change": 15,
+    },
+    "XGBoost": {
+        "n_estimators": 180,
+        "max_depth": 4,
+        "learning_rate": 0.07,
+        "subsample": 0.9,
+        "colsample_bytree": 0.9,
+        "eval_metric": "logloss",
+        "n_jobs": 1,
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# Profile eksperymentów
+# ---------------------------------------------------------------------------
+EXPERIMENT_PROFILES = {
+    # Profil pełny — 5 poziomów uszkodzeń, metody KNN, 3 powtórzenia
+    "full": {
         "datasets": DATASETS_ALL,
         "methods": ["raw", "fill", "remove_fill", "fill_norm", "all", "fill_knn", "all_knn"],
         "models": ["RF", "NB", "MLP", "XGBoost"],
@@ -163,9 +202,17 @@ EXPERIMENT_PROFILES = {
         "damage_repeats": [1, 2, 3],
         "cv_states": [101, 202, 303],
         "cv_folds": 4,
-        "output_suffix": "_10_50",
-        "dirty_file_pattern": "{name}_10_50_prob_{level}_r{repeat}.csv",
+        "output_suffix": "_full",
+        "dirty_file_pattern": "{name}_full_prob_{level}_r{repeat}.csv",
+        # Parametry generowania uszkodzeń
+        "damage_seed_base": 5000,
+        "outlier_factors": [20, 40, 80, -20],
+        "outlier_rate_scale": 0.8,    # outlier_count = max(0.05, damage * scale)
+        "outlier_rate_floor": 0.05,
+        "noise_rate_scale": 0.8,
+        "noise_rate_floor": 0.05,
     },
+    # Profil szybki — 3 poziomy, 2 powtórzenia, mniej modeli
     "fast": {
         "datasets": DATASETS_ALL,
         "methods": ["raw", "fill", "remove_fill", "fill_norm", "all"],
@@ -175,7 +222,14 @@ EXPERIMENT_PROFILES = {
         "cv_states": [101, 202],
         "cv_folds": 3,
         "output_suffix": "_fast",
-        "dirty_file_pattern": "{name}_prob_{level}_r{repeat}.csv",
+        "dirty_file_pattern": "{name}_fast_prob_{level}_r{repeat}.csv",
+        # Parametry generowania uszkodzeń
+        "damage_seed_base": 1000,
+        "outlier_factors": [25, 50, 100, -25],
+        "outlier_rate_scale": 1.0,    # outlier_count = damage_level * 1.0 (bezpośrednio)
+        "outlier_rate_floor": 0.0,
+        "noise_rate_scale": 1.0,
+        "noise_rate_floor": 0.0,
     },
 }
 
