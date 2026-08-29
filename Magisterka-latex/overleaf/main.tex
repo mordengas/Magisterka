@@ -1,4 +1,4 @@
-\documentclass[12pt,a4paper,twoside,openright]{book}
+\documentclass[12pt,a4paper,twoside,openany]{book}
 
 % ==============================================================================
 % PAKIETY JĘZYKOWE I CZCIONKA CALIBRI (Kompatybilność z Overleaf / pdfLaTeX / XeLaTeX)
@@ -80,13 +80,37 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{graphicx}
+\usepackage{subcaption}
 \usepackage{wrapfig}
-\usepackage{color}
+\usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{multirow}
 \usepackage{float}
 \usepackage{lipsum}
+\usepackage{listings}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  stepnumber=1,
+  numbersep=8pt,
+  backgroundcolor=\color{black!3},
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  frame=single,
+  rulecolor=\color{black!25},
+  tabsize=4,
+  captionpos=b,
+  breaklines=true,
+  breakatwhitespace=false,
+  keywordstyle=\bfseries\color{blue!70!black},
+  commentstyle=\itshape\color{green!50!black},
+  stringstyle=\color{red!60!black}
+}
+\renewcommand{\lstlistingname}{Listing}
 
 % ==============================================================================
 % LINKI I ADRESY URL
@@ -123,12 +147,13 @@
 % 1. Strona tytułowa (bez numeracji)
 \pagenumbering{gobble}
 \input{strona_tytulowa.tex}
+\thispagestyle{empty}
+\cleardoublepage
 
 % 2. Spis treści
 \pagestyle{plain}
 \pagenumbering{roman}
 \tableofcontents
-\newpage
 \cleardoublepage
 
 % 3. Właściwa część pracy (numeracja arabska)
@@ -143,13 +168,23 @@
 \input{rozdzial5_podsumowanie.tex}
 \input{zakonczenie.tex}
 
-% 4. Bibliografia i Streszczenie
-\newpage
-\cleardoublepage
+% 4. Bibliografia, Wykazy i Streszczenie
+\clearpage
 \input{literatura.tex}
 
-\newpage
-\cleardoublepage
+\clearpage
+\renewcommand{\listfigurename}{Wykaz rysunków}
+\phantomsection
+\addcontentsline{toc}{chapter}{Wykaz rysunków}
+\listoffigures
+
+\clearpage
+\renewcommand{\listtablename}{Wykaz tabel}
+\phantomsection
+\addcontentsline{toc}{chapter}{Wykaz tabel}
+\listoftables
+
+\clearpage
 \input{streszczenie.tex}
 
 \end{document}

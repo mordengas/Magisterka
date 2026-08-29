@@ -1,74 +1,74 @@
 \chapter{Część teoretyczna}
 
 \section{Taksonomia problemów jakości danych tabelarycznych}
-Współczesna analiza danych tabelarycznych oraz uczenie maszynowe opierają się na założeniu, że zbiór uczący w sposób wierny odzwierciedla rozkład badanego zjawiska w populacji generalnej. W warunkach rzeczywistych dane wejściowe są jednak obarczone licznymi zniekształceniami. Jak wskazuje Walker \cite{Walker2021}, błędy te można podzielić na trzy fundamentalne kategorie: braki danych, zaburzenia rozkładów wywołane obserwacjami odstającymi oraz niespójności skali i reprezentacji kategorycznej.
+Współczesna analiza danych tabelarycznych oraz uczenie maszynowe opierają się na założeniu, że zbiór uczący w~sposób wierny odzwierciedla rozkład badanego zjawiska w~populacji generalnej. W~warunkach rzeczywistych dane wejściowe są jednak obarczone licznymi zniekształceniami. Jak wskazuje Walker \cite{Walker2021}, błędy te można podzielić na trzy fundamentalne kategorie: braki danych, zaburzenia rozkładów wywołane obserwacjami odstającymi oraz niespójności skali i~reprezentacji kategorycznej.
 
 \subsection{Mechanizmy powstawania braków danych}
-W teorii statystyki, sformułowanej pierwotnie przez Donalda Rubina \cite{LittleRubin2002}, wyróżnia się trzy podstawowe mechanizmy generowania braków danych:
+W~teorii statystyki, sformułowanej pierwotnie przez Donalda Rubina \cite{LittleRubin2002}, wyróżnia się trzy podstawowe mechanizmy generowania braków danych:
 \begin{enumerate}
-    \item \textbf{MCAR (ang. \textit{Missing Completely at Random})} – braki całkowicie losowe. Prawdopodobieństwo wystąpienia braku w danej zmiennej nie zależy ani od wartości samej zmiennej, ani od wartości jakichkolwiek innych atrybutów w zbiorze:
+    \item \textbf{MCAR (ang. \textit{Missing Completely at Random})}: braki całkowicie losowe. Prawdopodobieństwo wystąpienia braku w~danej zmiennej nie zależy ani od wartości samej zmiennej, ani od wartości jakichkolwiek innych atrybutów w~zbiorze:
     \begin{equation}
     P(M \mid Y_{\text{obs}}, Y_{\text{mis}}) = P(M),
     \end{equation}
-    gdzie $M$ jest binarną macierzą wskaźnikową braków, $Y_{\text{obs}}$ oznacza wartości zaobserwowane, a $Y_{\text{mis}}$ wartości brakujące.
-    \item \textbf{MAR (ang. \textit{Missing at Random})} – braki losowe warunkowo. Prawdopodobieństwo braku zależy od innych zaobserwowanych zmiennych, lecz nie od samej wartości brakującej:
+    gdzie $M$ jest binarną macierzą wskaźnikową braków, $Y_{\text{obs}}$ oznacza wartości zaobserwowane, a~$Y_{\text{mis}}$ wartości brakujące.
+    \item \textbf{MAR (ang. \textit{Missing at Random})}: braki losowe warunkowo. Prawdopodobieństwo braku zależy od innych zaobserwowanych zmiennych, lecz nie od samej wartości brakującej:
     \begin{equation}
     P(M \mid Y_{\text{obs}}, Y_{\text{mis}}) = P(M \mid Y_{\text{obs}}).
     \end{equation}
-    Przykładem jest sytuacja, w której częstość braków w wynikach badań laboratoryjnych zależy od wieku pacjenta lub płci.
-    \item \textbf{MNAR (ang. \textit{Missing Not at Random})} – braki nielosowe. Prawdopodobieństwo wystąpienia braku zależy bezpośrednio od niezaobserwowanej wartości (np. pacjenci z bardzo wysokim poziomem bólu częściej odmawiają udziału w badaniu).
+    Przykładem jest sytuacja, w~której częstość braków w~wynikach badań laboratoryjnych zależy od wieku pacjenta lub płci.
+    \item \textbf{MNAR (ang. \textit{Missing Not at Random})}: braki nielosowe. Prawdopodobieństwo wystąpienia braku zależy bezpośrednio od niezaobserwowanej wartości (np.~pacjenci z~bardzo wysokim poziomem bólu częściej odmawiają udziału w~badaniu).
 \end{enumerate}
 Wybór odpowiedniej procedury imputacji musi uwzględniać powyższy charakter zjawiska, aby nie doprowadzić do zniekształcenia kowariancji cech \cite{LittleRubin2002,Walker2021}.
 
-\subsection{Wartości odstające i błędy grube}
-Wartości odstające (ang. \textit{outliers}) to obserwacje, które w sposób drastyczny odbiegają od wzorca wyznaczonego przez przeważającą część zbioru. Mogą one wynikać z:
+\subsection{Wartości odstające i~błędy grube}
+Wartości odstające (ang. \textit{outliers}) to obserwacje, które w~sposób drastyczny odbiegają od wzorca wyznaczonego przez przeważającą część zbioru. Mogą one wynikać z:
 \begin{itemize}
-    \item \textbf{Błędów grubych aparatury i zapisu}: pomyłki jednostek (np. gramy zamiast miligramów), błędy wprowadzania danych z klawiatury (np. przesunięcie przecinka dziesiętnego), usterki czujników.
-    \item \textbf{Naturalnej zmienności ekstremalnej}: rzadkie, lecz rzeczywiste przypadki kliniczne (np. pacjenci z ekstremalnym nasileniem wskaźników stanu zapalnego).
+    \item \textbf{Błędów grubych aparatury i~zapisu}: pomyłki jednostek (np.~gramy zamiast miligramów), błędy wprowadzania danych z~klawiatury (np.~przesunięcie przecinka dziesiętnego), usterki czujników.
+    \item \textbf{Naturalnej zmienności ekstremalnej}: rzadkie, lecz rzeczywiste przypadki kliniczne (np.~pacjenci z~ekstremalnym nasileniem wskaźników stanu zapalnego).
 \end{itemize}
-Obecność obserwacji odstających silnie zaburza nieodporne estymatory statystyczne. Przykładowo, średnia arytmetyczna $\hat{\mu}$ oraz wariancja próbkowa $\hat{\sigma}^2$ charakteryzują się zerowym punktem załamania (ang. \textit{breakdown point} $\epsilon^* = 0$, wg teorii statystyki odpornej Hubera \cite{Huber1981}), co oznacza, że pojedyncza skrajna wartość może dowolnie zmienić ich oszacowanie. Z kolei estymatory odporne, takie jak mediana czy rozstęp międzykwartylowy, zachowują stabilność przy obecności do $50\%$ zaburzonych obserwacji \cite{Huber1981,Walker2021}.
+Obecność obserwacji odstających silnie zaburza nieodporne estymatory statystyczne. Przykładowo, średnia arytmetyczna $\hat{\mu}$ oraz wariancja próbkowa $\hat{\sigma}^2$ charakteryzują się zerowym punktem załamania (ang. \textit{breakdown point} $\epsilon^* = 0$, wg teorii statystyki odpornej Hubera \cite{Huber1981}), co oznacza, że pojedyncza skrajna wartość może dowolnie zmienić ich oszacowanie. Z~kolei estymatory odporne, takie jak mediana czy rozstęp międzykwartylowy, zachowują stabilność przy obecności do $50\%$ zaburzonych obserwacji \cite{Huber1981,Walker2021}.
 
-\section{Metody wstępnego przetwarzania i czyszczenia danych}
+\section{Metody wstępnego przetwarzania i~czyszczenia danych}
 
 \subsection{Uzupełnianie braków danych (Imputacja)}
-W praktyce inżynierii danych wyróżnia się podejścia proste (statystyczne) oraz zaawansowane (uczące się):
+W~praktyce inżynierii danych wyróżnia się podejścia proste (statystyczne) oraz zaawansowane (uczące się):
 \begin{enumerate}
     \item \textbf{Imputacja statystyczna}: zastąpienie braków wartością syntetyczną wyznaczoną globalnie na zbiorze uczącym:
     \begin{itemize}
         \item dla cech ciągłych: mediana $\mathrm{Med}(X)$ próby (bezpieczniejsza od średniej przy rozkładach skośnych) \cite{Walker2021},
         \item dla cech kategorycznych: dominanta (moda), czyli najczęściej występująca kategoria.
     \end{itemize}
-    \item \textbf{Imputacja sąsiedztwa (\texttt{KNNImputer})}: wielowymiarowa metoda estymacji braków bazująca na algorytmie $k$-najbliższych sąsiadów \cite{SklearnKNNImputer}. Dla dwóch obserwacji $x, y$, w których część cech może brakować, odległość euklidesowa z maskowaniem wyznaczana jest ze wzoru:
+    \item \textbf{Imputacja sąsiedztwa (\texttt{KNNImputer})}: wielowymiarowa metoda estymacji braków bazująca na algorytmie $k$-najbliższych sąsiadów \cite{SklearnKNNImputer}. Dla dwóch obserwacji $x, y$, w~których część cech może brakować, odległość euklidesowa z~maskowaniem wyznaczana jest ze wzoru:
     \begin{equation}
-    d(x, y) = \sqrt{ \frac{p}{p_{\text{wspólne}}} \sum_{i \in \text{wspólne}} (x_i - y_i)^2 },
+    d(x, y) = \sqrt{ \frac{p}{p_{\text{wspólne}}} \sum_{i~\in \text{wspólne}} (x_i - y_i)^2 },
     \end{equation}
-    gdzie $p$ to całkowita liczba cech, a $p_{\text{wspólne}}$ to liczba cech obserwowanych w obu rekordach jednocześnie. Brakująca wartość w rekordzie $x$ jest następnie estymowana jako średnia ważona z $k$ najbardziej podobnych rekordów:
+    gdzie $p$ to całkowita liczba cech, a~$p_{\text{wspólne}}$ to liczba cech obserwowanych w~obu rekordach jednocześnie. Brakująca wartość w~rekordzie $x$ jest następnie estymowana jako średnia ważona z~$k$ najbardziej podobnych rekordów:
     \begin{equation}
     \hat{x}_j = \frac{\sum_{m \in N_k(x)} w_m \cdot y_{m,j}}{\sum_{m \in N_k(x)} w_m}, \quad w_m = \frac{1}{d(x, y_m)}.
     \end{equation}
 \end{enumerate}
 
-\subsection{Identyfikacja i obsługa wartości odstających}
-W pracy zaimplementowano regułę rozstępu międzykwartylowego (IQR) zaproponowaną przez Johna Tukeya \cite{Tukey1977}. Kwartyle $Q_1$ i $Q_3$ dzielą uporządkowany ciąg danych na cztery równe części, a rozstęp międzykwartylowy definiowany jest jako:
+\subsection{Identyfikacja i~obsługa wartości odstających}
+W~pracy zaimplementowano regułę rozstępu międzykwartylowego (IQR) zaproponowaną przez Johna Tukeya \cite{Tukey1977}. Kwartyle $Q_1$ i~$Q_3$ dzielą uporządkowany ciąg danych na cztery równe części, a~rozstęp międzykwartylowy definiowany jest jako:
 \begin{equation}
 \mathrm{IQR} = Q_3 - Q_1.
 \end{equation}
-W klasycznym podejściu Tukeya \cite{Tukey1977} wyróżnia się:
+W~klasycznym podejściu Tukeya \cite{Tukey1977} wyróżnia się:
 \begin{itemize}
     \item anomalie umiarkowane: $x \notin [Q_1 - 1{,}5 \cdot \mathrm{IQR}, \; Q_3 + 1{,}5 \cdot \mathrm{IQR}]$,
     \item anomalie ekstremalne: $x \notin [Q_1 - 3{,}0 \cdot \mathrm{IQR}, \; Q_3 + 3{,}0 \cdot \mathrm{IQR}]$.
 \end{itemize}
-Zgodnie z recepturami Walkera \cite{Walker2021}, w niniejszej pracy zastosowano próg $3{,}0 \cdot \mathrm{IQR}$, aby odfiltrować wyłącznie bezdyskusyjne błędy grube i anomalie skrajne. Zamiast agresywnego usuwania całych rekordów (co prowadzi do utraty cennych informacji w pozostałych poprawnych kolumnach), zaimplementowany transformator \texttt{OutlierToNaNTransformer} zamienia wykryte outliery na wartości \texttt{NaN}, umożliwiając ich późniejszą poprawną rekonstrukcję w module imputacji.
+Zgodnie z~recepturami Walkera \cite{Walker2021}, w~niniejszej pracy zastosowano próg $3{,}0 \cdot \mathrm{IQR}$, aby odfiltrować wyłącznie bezdyskusyjne błędy grube i~anomalie skrajne. Zamiast agresywnego usuwania całych rekordów (co prowadzi do utraty cennych informacji w~pozostałych poprawnych kolumnach), zaimplementowany transformator \texttt{OutlierToNaNTransformer} zamienia wykryte outliery na wartości \texttt{NaN}, umożliwiając ich późniejszą poprawną rekonstrukcję w~module imputacji.
 
-Do metod wielowymiarowej detekcji anomalii należy algorytm \textbf{Isolation Forest} \cite{Liu2008}. Metoda ta buduje zespół losowych drzew decyzyjnych (\textit{iTrees}). Punkty odstające, jako rzadkie i odizolowane, wymagają znacznie mniejszej liczby podziałów do ich wyodrębnienia. Wskaźnik anomalii dla obserwacji $x$ definiowany jest jako:
+Do metod wielowymiarowej detekcji anomalii należy algorytm \textbf{Isolation Forest} \cite{Liu2008}. Metoda ta buduje zespół losowych drzew decyzyjnych (\textit{iTrees}). Punkty odstające, jako rzadkie i~odizolowane, wymagają znacznie mniejszej liczby podziałów do ich wyodrębnienia. Wskaźnik anomalii dla obserwacji $x$ definiowany jest jako:
 \begin{equation}
 s(x, n) = 2^{-\frac{\mathbb{E}(h(x))}{c(n)}},
 \end{equation}
-gdzie $h(x)$ to długość ścieżki w drzewie, $\mathbb{E}(h(x))$ to średnia długość ścieżki w zespole, a $c(n) = 2\ln(n - 1) + 0{,}5772 - \frac{2(n - 1)}{n}$ jest średnią długością ścieżki nieudanego wyszukiwania w drzewie BST dla $n$ obserwacji. Wartość $s \to 1$ jednoznacznie identyfikuje anomalię \cite{Liu2008}.
+gdzie $h(x)$ to długość ścieżki w~drzewie, $\mathbb{E}(h(x))$ to średnia długość ścieżki w~zespole, a~$c(n) = 2\ln(n - 1) + 0{,}5772 - \frac{2(n - 1)}{n}$ jest średnią długością ścieżki nieudanego wyszukiwania w~drzewie BST dla $n$ obserwacji. Wartość $s \to 1$ jednoznacznie identyfikuje anomalię \cite{Liu2008}. Algorytm Isolation Forest stanowi teoretyczną alternatywę dla jednowymiarowej reguły IQR; w~niniejszej pracy zdecydowano się jednak na regułę IQR jako metodę deterministyczną, w~pełni interpretowalną i~bezpośrednio integrującą się z~potokiem scikit-learn bez dodatkowego strojenia hiperparametrów (takich jak liczba drzew czy stopień zanieczyszczenia próbki).
 
-\subsection{Skalowanie atrybutów i kodowanie zmiennych jakościowych}
+\subsection{Skalowanie atrybutów i~kodowanie zmiennych jakościowych}
 \begin{enumerate}
-    \item \textbf{Standaryzacja $z$-score}: przekształca zmienną losową do postaci o zerowej średniej i jednostkowej wariancji:
+    \item \textbf{Standaryzacja $z$-score}: przekształca zmienną losową do postaci o~zerowej średniej i~jednostkowej wariancji:
     \begin{equation}
     z = \frac{x - \mu}{\sigma},
     \end{equation}
@@ -77,7 +77,7 @@ gdzie $h(x)$ to długość ścieżki w drzewie, $\mathbb{E}(h(x))$ to średnia d
     \begin{equation}
     x' = \frac{x - x_{\min}}{x_{\max} - x_{\min}}.
     \end{equation}
-    \item \textbf{Kodowanie One-Hot (\texttt{OneHotEncoder})}: przekształca cechę kategoryczną o $C$ unikalnych poziomach w $C$ binarnych wektorów wskaźnikowych. W celu uniknięcia problemu rzadkich kategorii wprowadzono transformator \texttt{RareCategoryToNaNTransformer}, który kategorie o częstości występowania poniżej progu 5\% konwertuje do postaci braków danych przed etapem kodowania.
+    \item \textbf{Kodowanie One-Hot (\texttt{OneHotEncoder})}: przekształca cechę kategoryczną o~$C$ unikalnych poziomach w~$C$ binarnych wektorów wskaźnikowych. W~celu uniknięcia problemu rzadkich kategorii wprowadzono transformator \texttt{RareCategoryToNaNTransformer}, który kategorie o~częstości występowania poniżej progu 5\% konwertuje do postaci braków danych przed etapem kodowania.
 \end{enumerate}
 
 \section{Wybrane algorytmy klasyfikacji}
@@ -87,48 +87,48 @@ Naiwny Klasyfikator Bayesa opiera się na bezpośrednim zastosowaniu twierdzenia
 \begin{equation}
 P(y = c \mid x) = \frac{P(y = c) \prod_{j=1}^{p} P(x_j \mid y = c)}{P(x)}.
 \end{equation}
-W wariancie \texttt{GaussianNB} zakłada się, że rozkład warunkowy każdej cechy ciągłej jest rozkładem normalnym:
+W~wariancie \texttt{GaussianNB} zakłada się, że rozkład warunkowy każdej cechy ciągłej jest rozkładem normalnym:
 \begin{equation}
 P(x_j \mid y = c) = \frac{1}{\sqrt{2\pi \sigma_{jc}^2}} \exp\left( -\frac{(x_j - \mu_{jc})^2}{2\sigma_{jc}^2} \right).
 \end{equation}
-Parametry $\mu_{jc}$ i $\sigma_{jc}^2$ estymowane są za pomocą średniej i wariancji próbkowej. W konsekwencji obecność nieodfiltrowanych wartości odstających drastycznie zniekształca parametry gęstości prawdopodobieństwa, powodując załamanie zdolności predykcyjnej klasyfikatora.
+Parametry $\mu_{jc}$ i~$\sigma_{jc}^2$ estymowane są za pomocą średniej i~wariancji próbkowej. W~konsekwencji obecność nieodfiltrowanych wartości odstających drastycznie zniekształca parametry gęstości prawdopodobieństwa, powodując załamanie zdolności predykcyjnej klasyfikatora.
 
 \subsection{Perceptron Wielowarstwowy (MLP)}
-MLP (ang. \textit{Multilayer Perceptron}) to sieć neuronowa o architekturze jednokierunkowej, uczona z nadzorem \cite{Hastie2009,SklearnMLPClassifier}. Dla pojedynczego neuronu w warstwie ukrytej sygnał wyjściowy wyznaczany jest jako:
+MLP (ang. \textit{Multilayer Perceptron}) to sieć neuronowa o~architekturze jednokierunkowej, uczona z~nadzorem \cite{Hastie2009,SklearnMLPClassifier}. Dla pojedynczego neuronu w~warstwie ukrytej sygnał wyjściowy wyznaczany jest jako:
 \begin{equation}
 a = f\left( \sum_{j=1}^{p} w_j x_j + b \right),
 \end{equation}
-gdzie $w_j$ oznaczają wagi połączeń, $b$ to obciążenie (bias), a $f(\cdot)$ jest nieliniową funkcją aktywacji (np. ReLU: $f(s) = \max(0, s)$).
+gdzie $w_j$ oznaczają wagi połączeń, $b$ to obciążenie (bias), a~$f(\cdot)$ jest nieliniową funkcją aktywacji (np.~ReLU: $f(s) = \max(0, s)$).
 
 Proces uczenia polega na minimalizacji funkcji straty (entropii krzyżowej dla klasyfikacji binarnej):
 \begin{equation}
 \mathcal{L}(w, b) = -\frac{1}{N} \sum_{i=1}^{N} \left[ y_i \ln \hat{y}_i + (1 - y_i) \ln (1 - \hat{y}_i) \right] + \frac{\alpha}{2} \|w\|_2^2,
 \end{equation}
-za pomocą algorytmu optymalizacji opartego na gradientach (Adam \cite{KingmaBa2015}). Brak standaryzacji cech wejściowych prowadzi do złego uwarunkowania macierzy drugich pochodnych (hesjanu), co wywołuje zjawisko oscylacji gradientu i uniemożliwia zbieżność procesu uczenia.
+za pomocą algorytmu optymalizacji opartego na gradientach (Adam \cite{KingmaBa2015}). Brak standaryzacji cech wejściowych prowadzi do złego uwarunkowania macierzy drugich pochodnych (hesjanu), co wywołuje zjawisko oscylacji gradientu i~uniemożliwia zbieżność procesu uczenia.
 
 \subsection{Lasy Losowe (Random Forest)}
-Algorytm Lasów Losowych, opracowany przez Leo Breimana \cite{Breiman2001}, stanowi zespół wielu drzew decyzyjnych uczonych metodą agregacji bootstrapowej (bagging). Każde drzewo $T_b$ budowane jest na niezależnej próbie losowej ze zwracaniem $D_b \subset D$. W każdym węźle drzewa optymalny podział wyznaczany jest wyłącznie spośród losowo wybranego podzbioru $m \approx \sqrt{p}$ cech.
+Algorytm Lasów Losowych, opracowany przez Leo Breimana \cite{Breiman2001}, stanowi zespół wielu drzew decyzyjnych uczonych metodą agregacji bootstrapowej (bagging). Każde drzewo $T_b$ budowane jest na niezależnej próbie losowej ze zwracaniem $D_b \subset D$. W~każdym węźle drzewa optymalny podział wyznaczany jest wyłącznie spośród losowo wybranego podzbioru $m \approx \sqrt{p}$ cech.
 
 Kryterium oceny jakości podziału węzła stanowi zanieczyszczenie Giniego (ang. \textit{Gini Impurity}):
 \begin{equation}
 I_G(t) = 1 - \sum_{k=1}^{K} p_k^2,
 \end{equation}
-gdzie $p_k$ to frakcja obserwacji klasy $k$ w węźle $t$. Ponieważ decyzje podziału w drzewach decyzyjnych zależą wyłącznie od porządku relacyjnego wartości atrybutu ($x_j \le \theta$), Lasy Losowe są całkowicie niewrażliwe na monotoniczne transformacje i brak standaryzacji cech \cite{Breiman2001,Hastie2009}.
+gdzie $p_k$ to frakcja obserwacji klasy $k$ w~węźle $t$. Ponieważ decyzje podziału w~drzewach decyzyjnych zależą wyłącznie od porządku relacyjnego wartości atrybutu ($x_j \le \theta$), Lasy Losowe są całkowicie niewrażliwe na monotoniczne transformacje i~brak standaryzacji cech \cite{Breiman2001,Hastie2009}.
 
 \subsection{XGBoost (Extreme Gradient Boosting)}
-XGBoost \cite{ChenGuestrin2016} jest algorytmem sekwencyjnego wzmacniania gradientowego. W odróżnieniu od baggingu, każde kolejne drzewo $f_t(x)$ jest dopasowywane do residuów (błędów) popełnionych przez dotychczasowy zespół:
+XGBoost \cite{ChenGuestrin2016} jest algorytmem sekwencyjnego wzmacniania gradientowego. W~odróżnieniu od baggingu, każde kolejne drzewo $f_t(x)$ jest dopasowywane do residuów (błędów) popełnionych przez dotychczasowy zespół:
 \begin{equation}
 \hat{y}_i^{(t)} = \hat{y}_i^{(t-1)} + f_t(x_i).
 \end{equation}
-Funkcja celu w kroku $t$ przyjmuje postać:
+Funkcja celu w~kroku $t$ przyjmuje postać:
 \begin{equation}
 \mathrm{Obj}^{(t)} = \sum_{i=1}^{N} l(y_i, \hat{y}_i^{(t-1)} + f_t(x_i)) + \Omega(f_t),
 \end{equation}
-gdzie człon regularyzacyjny drzewa o $T$ liściach i wagach $w$ definiowany jest jako:
+gdzie człon regularyzacyjny drzewa o~$T$ liściach i~wagach $w$ definiowany jest jako:
 \begin{equation}
 \Omega(f) = \gamma T + \frac{1}{2} \lambda \sum_{j=1}^{T} w_j^2 + \alpha \sum_{j=1}^{T} |w_j|.
 \end{equation}
-Stosując rozwinięcie funkcji straty w szereg Taylora drugiego rzędu, otrzymuje się uproszczoną postać celu:
+Stosując rozwinięcie funkcji straty w~szereg Taylora drugiego rzędu, otrzymuje się uproszczoną postać celu:
 \begin{equation}
 \widetilde{\mathrm{Obj}}^{(t)} \approx \sum_{i=1}^{N} \left[ g_i f_t(x_i) + \frac{1}{2} h_i f_t^2(x_i) \right] + \Omega(f_t),
 \end{equation}
@@ -136,19 +136,19 @@ gdzie $g_i = \partial_{\hat{y}^{(t-1)}} l(y_i, \hat{y}^{(t-1)})$ oraz $h_i = \pa
 \begin{equation}
 w_j^* = -\frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda},
 \end{equation}
-a zysk z podziału węzła na podzbiory $I_L$ i $I_R$ dany jest wzorem:
+a~zysk z~podziału węzła na podzbiory $I_L$ i~$I_R$ dany jest wzorem:
 \begin{equation}
 \mathrm{Gain} = \frac{1}{2} \left[ \frac{(\sum_{i \in I_L} g_i)^2}{\sum_{i \in I_L} h_i + \lambda} + \frac{(\sum_{i \in I_R} g_i)^2}{\sum_{i \in I_R} h_i + \lambda} - \frac{(\sum_{i \in I} g_i)^2}{\sum_{i \in I} h_i + \lambda} \right] - \gamma.
 \end{equation}
 
-\section{Metryki oceny jakości modeli i aparat statystyczny}
+\section{Metryki oceny jakości modeli i~aparat statystyczny}
 
-\subsection{Krzywa ROC i pole pod krzywą (AUC)}
-Krzywa ROC przedstawia zależność pomiędzy czułością ($\mathrm{TPR}$) a odsetkiem fałszywych alarmów ($\mathrm{FPR}$) dla zmiennego progu klasyfikacji $\theta \in [0, 1]$ \cite{Fawcett2006}:
+\subsection{Krzywa ROC i~pole pod krzywą (AUC)}
+Krzywa ROC przedstawia zależność pomiędzy czułością ($\mathrm{TPR}$) a~odsetkiem fałszywych alarmów ($\mathrm{FPR}$) dla zmiennego progu klasyfikacji $\theta \in [0, 1]$ \cite{Fawcett2006}:
 \begin{equation}
 \mathrm{TPR}(\theta) = \frac{\mathrm{TP}(\theta)}{\mathrm{TP}(\theta) + \mathrm{FN}(\theta)}, \qquad \mathrm{FPR}(\theta) = \frac{\mathrm{FP}(\theta)}{\mathrm{FP}(\theta) + \mathrm{TN}(\theta)}.
 \end{equation}
-Pole pod krzywą ROC ($\mathrm{AUC}$) posiada jednoznaczną interpretację probabilistyczną: stanowi prawdopodobieństwo, że losowo wybrana obserwacja z klasy pozytywnej otrzyma od modelu wyższą ocenę punktową (score) niż losowo wybrana obserwacja z klasy negatywnej \cite{Fawcett2006,HanleyMcNeil1982}:
+Pole pod krzywą ROC ($\mathrm{AUC}$) posiada jednoznaczną interpretację probabilistyczną: stanowi prawdopodobieństwo, że losowo wybrana obserwacja z~klasy pozytywnej otrzyma od modelu wyższą ocenę punktową (score) niż losowo wybrana obserwacja z~klasy negatywnej \cite{Fawcett2006,HanleyMcNeil1982}:
 \begin{equation}
 \mathrm{AUC} = P(\hat{y}(x^+) > \hat{y}(x^-)).
 \end{equation}
@@ -159,13 +159,13 @@ Wartość $\mathrm{AUC}$ jest ściśle równoważna znormalizowanej statystyce M
 gdzie $R^+$ oznacza sumę rang przypisanych obserwacjom pozytywnym.
 
 \subsection{Nieparametryczne testy istotności statystycznej}
-W celu rzetelnego porównania metod czyszczenia danych zastosowano nieparametryczne testy rangowe:
+W~celu rzetelnego porównania metod czyszczenia danych zastosowano nieparametryczne testy rangowe:
 \begin{enumerate}
-    \item \textbf{Test rangowy znaków Wilcoxona} \cite{Wilcoxon1945}: nieparametryczny odpowiednik testu $t$-Studenta dla prób zależnych. Dla par wyników $(x_i, y_i)$ oblicza się różnice $d_i = x_i - y_i$, a następnie porządkuje ich wartości bezwzględne, przypisując im rangi $R_i$. Statystyka testowa wynosi:
+    \item \textbf{Test rangowy znaków Wilcoxona} \cite{Wilcoxon1945}: nieparametryczny odpowiednik testu $t$-Studenta dla prób zależnych. Dla par wyników $(x_i, y_i)$ oblicza się różnice $d_i = x_i - y_i$, a~następnie porządkuje ich wartości bezwzględne, przypisując im rangi $R_i$. Statystyka testowa wynosi:
     \begin{equation}
     W = \min(W^+, W^-), \quad W^+ = \sum_{d_i > 0} R_i, \quad W^- = \sum_{d_i < 0} R_i.
     \end{equation}
-    \item \textbf{Test Friedmana} \cite{Friedman1937}: wielogrupowy test rangowy do weryfikacji hipotezy o braku różnic pomiędzy $k$ metodami ewaluowanymi na $N$ zbiorach prób. Statystyka testowa ma postać:
+    \item \textbf{Test Friedmana} \cite{Friedman1937}: wielogrupowy test rangowy do weryfikacji hipotezy o~braku różnic pomiędzy $k$ metodami ewaluowanymi na $N$ zbiorach prób. Statystyka testowa ma postać:
     \begin{equation}
     \chi_F^2 = \frac{12 N}{k(k + 1)} \left[ \sum_{j=1}^{k} \bar{R}_j^2 - \frac{k(k + 1)^2}{4} \right],
     \end{equation}

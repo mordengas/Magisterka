@@ -1,46 +1,47 @@
 \chapter{Wprowadzenie}
 
-\section{Motywacja i sformułowanie problemu}
-Rozwój metod uczenia maszynowego oraz rosnąca dostępność cyfrowych baz danych sprawiły, że algorytmy predykcyjne znajdują coraz szersze zastosowanie w dziedzinach o wysokim stopniu odpowiedzialności, takich jak diagnostyka medyczna, ocena ryzyka klinicznego czy prognozowanie powikłań chorobowych. W praktycznych zastosowaniach jakość modeli klasyfikacyjnych jest jednak ściśle uzależniona od jakości danych wejściowych. Rzeczywiste zbiory danych rzadko charakteryzują się idealną spójnością i kompletnością. Zjawiska takie jak błędy aparatury pomiarowej, subiektywizm personelu rejestrującego, usterki systemów teleinformatycznych czy naturalna zmienność biologiczna prowadzą do powstawania zanieczyszczeń w postaci brakujących wartości, błędów grubych oraz obserwacji skrajnie odstających.
+\section{Motywacja i~sformułowanie problemu}
+Rozwój metod uczenia maszynowego oraz rosnąca dostępność cyfrowych baz danych sprawiły, że algorytmy predykcyjne znajdują coraz szersze zastosowanie w~dziedzinach o~wysokim stopniu odpowiedzialności, takich jak diagnostyka medyczna, ocena ryzyka klinicznego czy prognozowanie powikłań chorobowych. W~praktycznych zastosowaniach jakość modeli klasyfikacyjnych jest jednak ściśle uzależniona od jakości danych wejściowych. Rzeczywiste zbiory danych rzadko charakteryzują się idealną spójnością i~kompletnością. Zjawiska takie jak błędy aparatury pomiarowej, subiektywizm personelu rejestrującego, usterki systemów teleinformatycznych czy naturalna zmienność biologiczna prowadzą do powstawania zanieczyszczeń w~postaci brakujących wartości, błędów grubych oraz obserwacji skrajnie odstających.
 
-Jak wskazuje Michael Walker w swojej pracy poświęconej recepturom czyszczenia danych w języku Python \cite{Walker2021}, etap przygotowania i oczyszczania zbioru pochłania w praktyce inżynierskiej nawet do 80\% czasu poświęcanego na cały projekt analityczny. Walker podkreśla, że zanieczyszczenia danych nie mają charakteru jednorodnego — mogą wynikać zarówno ze strukturalnych braków rejestracji, jak i z obecności obserwacji ekstremalnych, zaburzających fundamentalne estymatory statystyczne (takie jak średnia, wariancja czy korelacje międzycechowe). Niewłaściwe lub bezrefleksyjne potraktowanie tych anomalii prowadzi do budowy modeli o zafałszowanych granicach decyzyjnych oraz niskiej zdolności generalizacji.
+Jak wskazuje Michael Walker w~swojej pracy poświęconej recepturom czyszczenia danych w~języku Python \cite{Walker2021}, etap przygotowania i~oczyszczania zbioru pochłania w~praktyce inżynierskiej nawet do 80\% czasu poświęcanego na cały projekt analityczny. Walker podkreśla, że zanieczyszczenia danych nie mają charakteru jednorodnego, ponieważ mogą wynikać zarówno ze strukturalnych braków rejestracji, jak i~z obecności obserwacji ekstremalnych, zaburzających fundamentalne estymatory statystyczne (takie jak średnia, wariancja czy korelacje międzycechowe). Niewłaściwe lub bezrefleksyjne potraktowanie tych anomalii prowadzi do budowy modeli o~zafałszowanych granicach decyzyjnych oraz niskiej zdolności generalizacji.
 
-Co więcej, poszczególne rodziny algorytmów uczenia maszynowego — od metod probabilistycznych (Naiwny Klasyfikator Bayesa), przez sieci neuronowe (Perceptron Wielowarstwowy MLP), po modele zespołowe oparte na drzewach decyzyjnych (Lasy Losowe, XGBoost) — wykazują fundamentalnie różną wrażliwość na zaburzenia rozkładów, brak standaryzacji oraz obecność szumu. Zrozumienie, w jakim stopniu konkretne techniki czyszczenia danych wpływają na jakość i stabilność poszczególnych klasyfikatorów w warunkach narastającej degradacji danych, stanowi istotne wyzwanie badawcze i praktyczne.
+Co więcej, poszczególne rodziny algorytmów uczenia maszynowego (od metod probabilistycznych jak Naiwny Klasyfikator Bayesa, przez sieci neuronowe MLP, po modele zespołowe oparte na drzewach decyzyjnych) wykazują fundamentalnie różną wrażliwość na zaburzenia rozkładów, brak standaryzacji oraz obecność szumu. Zrozumienie, w~jakim stopniu konkretne techniki czyszczenia danych wpływają na jakość i~stabilność poszczególnych klasyfikatorów w~warunkach narastającej degradacji danych, stanowi istotne wyzwanie badawcze i~praktyczne.
 
 \section{Cel pracy}
-Głównym celem niniejszej pracy magisterskiej jest empiryczne zbadanie i ilościowa ocena wpływu wybranych metod czyszczenia danych na jakość predykcyjną oraz stabilność czterech reprezentatywnych algorytmów klasyfikacji tabelarycznej w warunkach kontrolowanego stopnia zanieczyszczenia zbiorów.
+Głównym celem niniejszej pracy magisterskiej jest empiryczne zbadanie i~ilościowa ocena wpływu wybranych metod czyszczenia danych na jakość predykcyjną oraz stabilność czterech reprezentatywnych algorytmów klasyfikacji tabelarycznej w~warunkach kontrolowanego stopnia zanieczyszczenia zbiorów.
 
 Cel główny realizowany jest poprzez następujące cele szczegółowe:
 \begin{enumerate}
-    \item Zaprojektowanie i implementacja modułowego potoku przetwarzania danych (ang. \textit{preprocessing pipeline}) w języku Python, opartego na recepturach czyszczenia danych \cite{Walker2021} i eliminującego ryzyko wycieku informacji (ang. \textit{data leakage}) pomiędzy zbiorem uczącym a testowym.
+    \item Zaprojektowanie i~implementacja modułowego potoku przetwarzania danych (ang. \textit{preprocessing pipeline}) w~języku Python, opartego na recepturach czyszczenia danych \cite{Walker2021} i~eliminującego ryzyko wycieku informacji (ang. \textit{data leakage}) pomiędzy zbiorem uczącym a~testowym.
     \item Opracowanie metodyki kontrolowanej, wielostopniowej symulacji zanieczyszczeń (braków danych, wartości odstających oraz szumu kategorycznego) na zróżnicowanych zbiorach danych tabelarycznych.
     \item Porównanie efektywności elementarnych strategii czyszczenia danych (imputacji statystycznej, imputacji sąsiedztwa KNN, filtracji wartości odstających regułą IQR, standaryzacji cech) oraz ich sekwencyjnych złożeń.
     \item Przeprowadzenie analizy wrażliwości poszczególnych architektur klasyfikatorów (GaussianNB, MLP, Random Forest, XGBoost) na narastający stopień degradacji danych wejściowych.
 \end{enumerate}
 
-\section{Tezy i pytania badawcze}
-W pracy sformułowano następujące tezy badawcze podlegające weryfikacji eksperymentalnej:
+\section{Główne pytania i~zagadnienia badawcze}
+W~ramach realizacji pracy sformułowano kluczowe pytania badawcze, na które odpowiedzi poszukiwano w~toku eksperymentów:
 \begin{enumerate}
-    \item[\textbf{T1.}] Zastosowanie dedykowanych sekwencji czyszczenia danych pozwala na istotne ograniczenie spadku skuteczności klasyfikatorów przy rosnącym stopniu degradacji jakości zbioru wejściowego.
-    \item[\textbf{T2.}] Istnieje istotna asymetria wrażliwości pomiędzy badanymi rodzinami modeli: algorytmy oparte na optymalizacji gradientowej (MLP) oraz estymacji parametrów rozkładu (GaussianNB) zyskują na wieloetapowym czyszczeniu danych w stopniu znacznie wyższym niż modele zespołów drzew decyzyjnych (Random Forest, XGBoost).
-    \item[\textbf{T3.}] Zgodnie z metodyką proponowaną przez Walkera \cite{Walker2021}, kluczowe znaczenie dla poprawności statystycznej ma kolejność operacji: wcześniejsza identyfikacja i izolacja wartości odstających (zamiana na braki danych) przed etapem imputacji i standaryzacji zapobiega zniekształceniu wypełnianych wartości i maksymalizuje metrykę AUC.
+    \item \textbf{Wpływ potoków czyszczących na jakość klasyfikacji}: W~jakim stopniu zastosowanie wieloetapowego potoku przygotowania danych (filtracja wartości odstających, imputacja braków, standaryzacja) pozwala ograniczyć spadek jakości modeli przy narastającym poziomie uszkodzeń danych (od 10\% do 50\%)?
+    \item \textbf{Wrażliwość różnych architektur klasyfikatorów}: Jak poszczególne rodziny modeli (modele zespołowe oparte na drzewach, sieci neuronowe MLP oraz Naiwny Klasyfikator Bayesa) reagują na obecność zanieczyszczeń i~które z~nich zyskują najwięcej na wdrożeniu czyszczenia danych?
+    \item \textbf{Wybór metody imputacji oraz kolejność operacji}: Czy zaawansowana imputacja wielowymiarowa ($k$-NN) przynosi zauważalną przewagę nad prostą imputacją medianą oraz jak wcześniejsze usunięcie wartości odstających wpływa na poprawność wypełniania braków?
 \end{enumerate}
 
 \section{Zakres pracy}
 Zakres zrealizowanych prac obejmuje:
 \begin{itemize}
-    \item Przegląd literatury naukowej oraz współczesnych technik czyszczenia danych tabelarycznych w języku Python ze szczególnym uwzględnieniem podejścia recepturowego \cite{Walker2021}.
-    \item Przygotowanie pięciu zróżnicowanych zbiorów danych: zbioru pacjentów z układowym zapaleniem naczyń (\textit{Zapalenia naczyń}), diagnostyki kardiologicznej (\textit{Serce}), predykcji cukrzycy (\textit{Diabetes}), odpływu klientów telekomunikacyjnych (\textit{Rezygnacje}) oraz ryzyka kredytowego (\textit{Kredyty}).
-    \item Implementację autorskich transformatorów zgodnych ze standardem \texttt{scikit-learn}: detektora ekstremalnych wartości odstających \texttt{OutlierToNaNTransformer} (opartego na rozstępie IQR z mnożnikiem 3.0) oraz filtru rzadkich kategorii \texttt{RareCategoryToNaNTransformer}.
-    \item Zbudowanie potoków przetwarzania implementujących 7 strategii czyszczenia danych: \textit{raw}, \textit{norm}, \textit{fill}, \textit{fill\_knn}, \textit{remove\_fill}, \textit{fill\_norm} oraz pełnych potoków \textit{all} i \textit{all\_knn}.
-    \item Przeprowadzenie wielokrotnej powtarzanej stratyfikowanej walidacji krzyżowej (\textit{Repeated Stratified K-Fold}) z rejestracją średniej wartości pola pod krzywą ROC ($\overline{\mathrm{AUC}}$) oraz odchylenia standardowego ($\sigma_{\mathrm{AUC}}$).
+    \item Przegląd literatury naukowej oraz współczesnych technik czyszczenia danych tabelarycznych w~języku Python ze szczególnym uwzględnieniem podejścia recepturowego \cite{Walker2021}.
+    \item Przygotowanie pięciu zróżnicowanych zbiorów danych: zbioru pacjentów z~układowym zapaleniem naczyń (\textit{Zapalenia naczyń}), diagnostyki kardiologicznej (\textit{Serce}), predykcji cukrzycy (\textit{Diabetes}), odpływu klientów telekomunikacyjnych (\textit{Rezygnacje}) oraz ryzyka kredytowego (\textit{Kredyty}).
+    \item Implementację własnych klas transformatorów zgodnych ze standardem \texttt{scikit-learn}: detektora ekstremalnych wartości odstających \texttt{OutlierToNaNTransformer} (opartego na rozstępie IQR z~mnożnikiem 3.0) oraz filtru rzadkich kategorii \texttt{RareCategoryToNaNTransformer}.
+    \item Zbudowanie potoków przetwarzania implementujących 7~strategii czyszczenia danych: \textit{raw}, \textit{fill}, \textit{fill\_knn}, \textit{remove\_fill}, \textit{fill\_norm} oraz pełnych potoków \textit{all} i~\textit{all\_knn}.
+    \item Przeprowadzenie wielokrotnej powtarzanej stratyfikowanej walidacji krzyżowej (\textit{Repeated Stratified K-Fold}) z~rejestracją średniej wartości pola pod krzywą ROC ($\overline{\mathrm{AUC}}$) oraz odchylenia standardowego ($\sigma_{\mathrm{AUC}}$).
 \end{itemize}
 
 \section{Struktura pracy}
-Układ niniejszej pracy przedstawia się następująco:
+Praca została podzielona na pięć rozdziałów:
 \begin{itemize}
-    \item \textbf{Rozdział 2 (Część teoretyczna)} prezentuje formalny opis problemów jakości danych w ujęciu Walkera \cite{Walker2021}, matematyczne podstawy metod czyszczenia, architekturę badanych klasyfikatorów oraz metryki ewaluacji jakości modeli.
-    \item \textbf{Rozdział 3 (Środowisko i zbiory danych)} zawiera szczegółowy opis wykorzystanych narzędzi programistycznych, charakterystykę atrybutów badanych 5 zbiorów danych, a także opis procedury symulacji zanieczyszczeń i budowy potoków przetwarzania.
-    \item \textbf{Rozdział 4 (Wyniki eksperymentów)} przedstawia zestawienia tabelaryczne, wykresy i analizę porównawczą skuteczności klasyfikatorów na poszczególnych zbiorach danych w zależności od stopnia uszkodzenia i zastosowanej metody czyszczenia.
-    \item \textbf{Rozdział 5 (Podsumowanie i wnioski)} stanowi syntezę uzyskanych rezultatów, formalną weryfikację postawionych tez badawczych, odniesienie do wytycznych literaturowych oraz wskazanie perspektyw dalszego rozwoju projektu.
+    \item \textbf{Rozdział~1 (Wprowadzenie)} zawiera nakreślenie motywacji, sformułowanie głównego problemu badawczego, cel i~zakres zrealizowanych prac oraz postawione pytania badawcze.
+    \item \textbf{Rozdział~2 (Część teoretyczna)} traktuje o~problemach jakości danych tabelarycznych w~ujęciu Walkera \cite{Walker2021}, formalnych podstawach matematycznych metod czyszczenia (w~tym regule IQR i~algorytmie Isolation Forest), architekturze badanych modeli klasyfikacyjnych oraz metrykach ewaluacji i~testach statystycznych.
+    \item \textbf{Rozdział~3 (Środowisko i~zbiory danych)} omawia wykorzystane technologie i~biblioteki języka Python, szczegółową charakterystykę pięciu badanych zbiorów danych, metodykę symulacji zanieczyszczeń, architekturę modularnych potoków przetwarzania oraz pseudokod własnych klas transformatorów.
+    \item \textbf{Rozdział~4 (Wyniki eksperymentów)} poświęcony jest prezentacji oraz szczegółowej analizie uzyskanych rezultatów. Przedstawiono w~nim wykresy odporności modeli, tabele wyników empirycznych, heatmapy zysku $\Delta \mathrm{AUC}$, porównanie mediany z~algorytmem $k$-NN oraz formalną weryfikację istotności statystycznej z~Diagramem Różnic Krytycznych Demšara.
+    \item \textbf{Rozdział~5 (Podsumowanie i~wnioski)} stanowi syntezę przeprowadzonych badań, zestawienie głównych wniosków z~eksperymentów oraz wskazanie perspektyw dalszego rozwoju projektu.
 \end{itemize}

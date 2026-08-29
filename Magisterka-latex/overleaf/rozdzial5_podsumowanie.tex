@@ -1,49 +1,28 @@
-\chapter{Podsumowanie i wnioski}
+\chapter{Podsumowanie i~wnioski}
 
 \section{Podsumowanie wyników zrealizowanych eksperymentów}
-W ramach niniejszej pracy magisterskiej przeprowadzono kompleksowe i rygorystyczne metodologicznie badania empiryczne, których nadrzędnym celem była ilościowa i jakościowa ocena wpływu 7 strategii przygotowania danych na skuteczność oraz stabilność czterech architektur klasyfikatorów tabelarycznych (Random Forest, XGBoost, Gaussian Naive Bayes oraz Perceptron Wielowarstwowy MLP).
+W~ramach niniejszej pracy magisterskiej przeprowadzono kompleksowe i~rygorystyczne metodologicznie badania empiryczne, których nadrzędnym celem była ilościowa i~jakościowa ocena wpływu 7~strategii przygotowania danych na skuteczność oraz stabilność czterech architektur klasyfikatorów tabelarycznych (Random Forest, XGBoost, Gaussian Naive Bayes oraz Perceptron Wielowarstwowy MLP).
 
-Eksperymenty zrealizowano na 5 zróżnicowanych domenowo zbiorach danych (3 zbiorach medycznych: \textit{Zapalenia naczyń}, \textit{Choroby serca}, \textit{Cukrzyca Indian Pima}, zbiorze telekomunikacyjnym \textit{Rezygnacje klientów} oraz finansowym \textit{Ryzyko kredytowe}). Każdy ze zbiorów poddano kontrolowanemu procesowi degradacji jakości na 5 poziomach zanieczyszczeń ($10\%, 20\%, 30\%, 40\%, 50\%$), symulując jednoczesne występowanie trzech typów anomalii: losowych braków danych, ekstremalnych wartości odstających oraz błędnych kodów kategorii jakościowych. Ewaluację przeprowadzono w procedurze powtarzanej stratyfikowanej walidacji krzyżowej, a istotność różnic zweryfikowano testami rangowymi Friedmana i Wilcoxona na poziomie istotności $\alpha = 0{,}05$.
+Eksperymenty zrealizowano na 5 zróżnicowanych domenowo zbiorach danych (3 zbiorach medycznych: \textit{Zapalenia naczyń}, \textit{Choroby serca}, \textit{Cukrzyca Indian Pima}, zbiorze telekomunikacyjnym \textit{Rezygnacje klientów} oraz finansowym \textit{Ryzyko kredytowe}). Każdy ze zbiorów poddano kontrolowanemu procesowi degradacji jakości na 5 poziomach zanieczyszczeń ($10\%, 20\%, 30\%, 40\%, 50\%$), symulując jednoczesne występowanie trzech typów anomalii: losowych braków danych, ekstremalnych wartości odstających oraz błędnych kodów kategorii jakościowych. Ewaluację przeprowadzono w~procedurze powtarzanej stratyfikowanej walidacji krzyżowej, a~istotność różnic zweryfikowano testami rangowymi Friedmana i~Wilcoxona na poziomie istotności $\alpha = 0{,}05$.
 
-\section{Formalna weryfikacja postawionych tez badawczych}
-Na podstawie analizy wyników eksperymentalnych, zestawień metryk $\overline{\mathrm{AUC}}$, analizy zysków $\Delta \mathrm{AUC}$ oraz wyników testów nieparametrycznych, dokonano formalnej weryfikacji trzech hipotez badawczych postawionych w Rozdziale 1:
+\section{Główne wnioski z~przeprowadzonych eksperymentów}
+Na podstawie szczegółowej analizy wyników eksperymentalnych, zestawień metryk $\overline{\mathrm{AUC}}$, analizy zysków $\Delta \mathrm{AUC}$ oraz wyników testów nieparametrycznych sformułowano następujące kluczowe wnioski:
 
 \begin{enumerate}
-    \item \textbf{Teza T1}: \textit{Zastosowanie trójstopniowego potoku inżynierii danych (filtracja wartości odstających regułą IQR $\to$ imputacja braków $\to$ standaryzacja cech) pozwala zachować wysoką jakość predykcji ($\mathrm{AUC}$) klasyfikatorów nawet przy $50\%$ stopniu degradacji jakości danych.}
-    
-    \textbf{Weryfikacja: TEZA POTWIERDZONA.}  
-    Wyniki eksperymentalne jednoznacznie wykazały, że brak procedur czyszczących (\textit{raw}) prowadzi do drastycznego załamania jakości modeli przy rosnącym poziomie zanieczyszczeń. Zastosowanie pełnego potoku trójstopniowego (\textit{all} oraz \textit{all\_knn}) skutecznie zamortyzowało degradację, pozwalając modelom drzewiastym (RF, XGBoost) zachować $\mathrm{AUC} > 0{,}80 - 0{,}86$ na zbiorach medycznych nawet przy $50\%$ uszkodzonych atrybutów. W testach statystycznych Wilcoxona strategie te wykazały istotną statystycznie przewagę nad danymi surowymi w $80\%$ badanych konfiguracji ($16$ na $20$ przypadków).
+    \item \textbf{Skuteczność potoków wieloetapowych przy narastającej degradacji danych}:  
+    Brak jakichkolwiek procedur czyszczących (\textit{raw}) prowadzi do gwałtownego spadku jakości predykcji wszystkich modeli wraz ze wzrostem stopnia uszkodzenia danych. Zastosowanie pełnego potoku trójstopniowego (\textit{all} oraz \textit{all\_knn}) skutecznie amortyzuje ten spadek, pozwalając modelom drzewiastym (RF, XGBoost) zachować $\mathrm{AUC} > 0{,}80 - 0{,}86$ na zbiorach medycznych nawet przy $50\%$ uszkodzonych atrybutów. W~testach statystycznych Wilcoxona strategie te wykazały istotną statystycznie przewagę nad danymi surowymi w~$80\%$ badanych konfiguracji ($16$ na $20$ przypadków). Kluczowe znaczenie ma zachowanie kolejności operacji: wcześniejsza izolacja wartości odstających (konwersja do \texttt{NaN}) przed imputacją i~standaryzacją zapobiega zniekształceniu parametrów rozkładu.
 
-    \item \textbf{Teza T2}: \textit{Wpływ procedur czyszczenia danych wykazuje silną asymetrię w zależności od architektury klasyfikatora — modele oparte na optymalizacji gradientowej (MLP) oraz estymacji gęstości prawdopodobieństwa (GaussianNB) charakteryzują się radykalnie wyższą wrażliwością na zanieczyszczenia i zyskują z preprocessingu znacznie więcej niż zespoły drzew decyzyjnych (Random Forest, XGBoost).}
-    
-    \textbf{Weryfikacja: TEZA POTWIERDZONA.}  
-    Zaobserwowano wyraźną polaryzację zachowań architektur. Sieć MLP na danych nieoczyszczonych przy $50\%$ uszkodzeń ulegała całkowitej degradacji ($\mathrm{AUC} \approx 0{,}504$, co odpowiada losowemu zgadywaniu), natomiast wdrożenie potoku \textit{all} lub \textit{fill\_norm} podnosiło jej skuteczność do poziomu $0{,}642$ (zysk $\Delta \mathrm{AUC} > +0{,}13 - +0{,}20$). Podobnie klasyfikator GaussianNB tracił zdolności dyskryminacyjne przez zawyżenie wariancji rozkładu normalnego przez outliery, zyskując średnio $+0{,}08 - +0{,}15$ AUC po ich eliminacji. Z kolei modele Random Forest i XGBoost wykazały wysoką naturalną odporność, zachowując stabilność nawet bez standaryzacji cech.
+    \item \textbf{Wyraźna asymetria wrażliwości badanych klasyfikatorów}:  
+    Eksperymenty uwidoczniły silne zróżnicowanie reakcji modeli na zanieczyszczenia i~konieczność dopasowania potoku do architektury. Sieć neuronowa MLP na danych nieoczyszczonych przy $50\%$ uszkodzeń całkowicie traciła zdolność decyzyjną ($\mathrm{AUC} \approx 0{,}504$, co odpowiada losowemu zgadywaniu), natomiast wdrożenie potoku z~normalizacją (\textit{all} lub \textit{fill\_norm}) podnosiło jej skuteczność do poziomu $0{,}642$ (zysk $\Delta \mathrm{AUC} > +0{,}13 - +0{,}20$). Podobnie klasyfikator GaussianNB tracił zdolności dyskryminacyjne przez zawyżenie wariancji rozkładu normalnego przez outliery, zyskując średnio $+0{,}08 - +0{,}15$ AUC po ich odfiltrowaniu. Z~kolei modele zespołów drzew (Random Forest i~XGBoost) wykazały wysoką naturalną odporność, zyskując głównie na samej eliminacji błędów grubych i~poprawnej imputacji.
 
-    \item \textbf{Teza T3}: \textit{Zastosowanie wielowymiarowej imputacji algorytmem $k$-najbliższych sąsiadów ($k$-NN) w obecności silnych korelacji międzycechowych przynosi wyższą jakość rekonstrukcji niż estymatory statystyczne (mediana), jednak wiąże się ze znaczącym narzutem obliczeniowym i wymaga wcześniejszego odfiltrowania ekstremalnych anomalii.}
-    
-    \textbf{Weryfikacja: TEZA POTWIERDZONA.}  
-    Bezpośredni pojedynek strategii imputacji wykazał, że algorytm \texttt{KNNImputer} bez uprzedniej filtracji anomalii (\textit{fill\_knn}) ulega zaburzeniu metryki odległości euklidesowej. Dopiero w połączeniu z eliminacją outlierów (\textit{all\_knn}) metoda ta osiągnęła przewagę nad medianą na zbiorach o silnych korelacjach biologicznych (\textit{Diabetes}, \textit{Serce}). Narzut czasowy fazy transformacji był jednak około 12-krotnie wyższy, co czyni imputację medianą optymalnym kompromisem w zastosowaniach o ograniczonych zasobach obliczeniowych.
-\end{enumerate}
-
-\section{Rekomendacje inżynierskie dla praktyków Data Science}
-W oparciu o uzyskane wyniki sformułowano zestaw uniwersalnych zaleceń inżynierskich dotyczących budowy potoków przetwarzania danych tabelarycznych:
-\begin{itemize}
-    \item \textbf{Kolejność operacji ma znaczenie krytyczne}: Potok powinien zawsze realizować sekwencję: \textit{Detekcja outlierów ($3 \cdot \mathrm{IQR}$) $\to$ Konwersja do NaN $\to$ Imputacja $\to$ Standaryzacja}. Odwrócenie tej kolejności (np. standaryzacja przed usunięciem anomalii) niszczy estymatory średniej i wariancji.
-    \item \textbf{Dopasowanie strategii do modelu}: W projektach wykorzystujących sieci neuronowe (MLP) lub klasyfikatory odległościowe/liniowe, preprocessing z normalizacją jest bezwzględnie obligatoryjny. W przypadku modeli drzewiastych (XGBoost/RF) kluczowy zysk przynosi sama filtracja błędów grubych i poprawna imputacja braków.
-    \item \textbf{Ścisła hermetyzacja potoków}: Wszelkie parametry transformatorów muszą być uczone wyłącznie na podzbiorze treningowym wewnątrz obiektu \texttt{Pipeline}, co chroni przed katastrofalnym wyciekiem informacji (\textit{data leakage}).
-\end{itemize}
-
-\section{Trudności implementacyjne i ograniczenia badań}
-Podczas realizacji prac napotkano na następujące wyzwania metodologiczne:
-\begin{enumerate}
-    \item \textbf{Złożoność obliczeniowa procedur $k$-NN}: Wielokrotna ewaluacja algorytmu \texttt{KNNImputer} na setkach podziałów walidacji krzyżowej i wielu poziomach uszkodzeń wymagała optymalizacji pamięciowej i wielowątkowej.
-    \item \textbf{Niezrównoważenie klas decyzyjnych}: W niektórych zbiorach (np. \textit{Zapalenia naczyń}, \textit{Rezygnacje}) wystąpiła znaczna asymetria liczebności klas, co wymusiło rygorystyczne stosowanie stratyfikacji oraz wybór metryki AUC jako miary niewrażliwej na dysproporcje klas.
+    \item \textbf{Porównanie metod imputacji (kompromis pomiędzy dokładnością a~czasem)}:  
+    Porównanie strategii uzupełniania braków wykazało, że algorytm \texttt{KNNImputer} bez uprzedniej filtracji anomalii (\textit{fill\_knn}) ulega zaburzeniu metryki odległości euklidesowej. Dopiero w~połączeniu z~eliminacją outlierów (\textit{all\_knn}) metoda ta osiągnęła lekką przewagę nad medianą na zbiorach o~silnych korelacjach cech (\textit{Diabetes}, \textit{Serce}). Narzut czasowy obliczeń był jednak około 12-krotnie wyższy, co sprawia, że prosta imputacja medianą w~ramach potoku \textit{all} stanowi najbardziej optymalny i~szybki wybór w~praktycznych zastosowaniach.
 \end{enumerate}
 
 \section{Kierunki dalszego rozwoju badań}
-Jako obiecujące perspektywy kontynuacji podjętej tematyki badawczej wskazuje się:
+Jako perspektywy kontynuacji i~rozwoju podjętej tematyki badawczej wskazuje się:
 \begin{itemize}
     \item zbadanie skuteczności zaawansowanych metod imputacji wielokrotnej, takich jak algorytm MICE (ang. \textit{Multivariate Imputation by Chained Equations}) oraz lasy imputacyjne \textit{MissForest},
-    \item ewaluację odporności nowoczesnych architektur głębokich dedykowanych danym tabelarycznym (m.in. TabNet, FT-Transformer, SAINT),
-    \item analizę wpływu zanieczyszczeń w warunkach dryfu pojęciowego (ang. \textit{concept drift}) w strumieniowym przetwarzaniu danych w czasie rzeczywistym.
+    \item ewaluację odporności nowoczesnych architektur głębokich dedykowanych danym tabelarycznym (m.in.~TabNet, FT-Transformer, SAINT),
+    \item analizę wpływu zanieczyszczeń w~warunkach dryfu pojęciowego (ang. \textit{concept drift}) w~strumieniowym przetwarzaniu danych w~czasie rzeczywistym.
 \end{itemize}

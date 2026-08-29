@@ -230,8 +230,9 @@ def generate_delta_auc_heatmaps():
         values="Delta_AUC",
         aggfunc="mean"
     )[methods_clean]
+    piv_dataset.index = [d.capitalize() for d in piv_dataset.index]
 
-    plt.figure(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(12, 6.4), dpi=300)
     vmax = max(abs(piv_dataset.min().min()), abs(piv_dataset.max().max()), 0.05)
     sns.heatmap(
         piv_dataset,
@@ -241,13 +242,19 @@ def generate_delta_auc_heatmaps():
         center=0,
         vmin=-vmax,
         vmax=vmax,
+        annot_kws={"fontsize": 15.5, "fontweight": "bold"},
         cbar_kws={"label": "Średni zysk Δ AUC (Metoda - RAW)"},
-        linewidths=1,
-        linecolor="white"
+        linewidths=1.5,
+        linecolor="white",
+        ax=ax
     )
-    plt.title("Średni zysk Δ AUC z metod czyszczenia danych w podziale na zbiory", fontsize=13, fontweight="bold", pad=12)
-    plt.xlabel("Metoda naprawy danych", fontsize=11, fontweight="bold")
-    plt.ylabel("Zbiór danych", fontsize=11, fontweight="bold")
+    ax.set_title("Średni zysk Δ AUC z metod czyszczenia danych w podziale na zbiory", fontsize=16, fontweight="bold", pad=16)
+    ax.set_xlabel("Metoda naprawy danych", fontsize=14, fontweight="bold", labelpad=12)
+    ax.set_ylabel("Zbiór danych", fontsize=14, fontweight="bold", labelpad=12)
+    ax.tick_params(axis="both", which="major", labelsize=13)
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=12)
+    cbar.set_label("Średni zysk Δ AUC (Metoda - RAW)", fontsize=13, fontweight="bold", labelpad=10)
     plt.tight_layout()
     plt.savefig(out_dir / "heatmapa_delta_auc_dataset_vs_metoda.png", dpi=300, bbox_inches="tight")
     plt.close()
@@ -259,8 +266,9 @@ def generate_delta_auc_heatmaps():
         values="Delta_AUC",
         aggfunc="mean"
     ).reindex(available_models)[methods_clean]
+    piv_model.index = ["Random Forest", "XGBoost", "Gaussian NB", "MLP (Sieć neur.)"]
 
-    plt.figure(figsize=(10, 4.5))
+    fig, ax = plt.subplots(figsize=(12, 5.8), dpi=300)
     vmax_m = max(abs(piv_model.min().min()), abs(piv_model.max().max()), 0.05)
     sns.heatmap(
         piv_model,
@@ -270,13 +278,19 @@ def generate_delta_auc_heatmaps():
         center=0,
         vmin=-vmax_m,
         vmax=vmax_m,
+        annot_kws={"fontsize": 15.5, "fontweight": "bold"},
         cbar_kws={"label": "Średni zysk Δ AUC (Metoda - RAW)"},
-        linewidths=1,
-        linecolor="white"
+        linewidths=1.5,
+        linecolor="white",
+        ax=ax
     )
-    plt.title("Średni zysk Δ AUC z metod czyszczenia danych w podziale na klasyfikatory", fontsize=13, fontweight="bold", pad=12)
-    plt.xlabel("Metoda naprawy danych", fontsize=11, fontweight="bold")
-    plt.ylabel("Model", fontsize=11, fontweight="bold")
+    ax.set_title("Średni zysk Δ AUC z metod czyszczenia danych w podziale na klasyfikatory", fontsize=16, fontweight="bold", pad=16)
+    ax.set_xlabel("Metoda naprawy danych", fontsize=14, fontweight="bold", labelpad=12)
+    ax.set_ylabel("Model klasyfikacyjny", fontsize=14, fontweight="bold", labelpad=12)
+    ax.tick_params(axis="both", which="major", labelsize=13)
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=12)
+    cbar.set_label("Średni zysk Δ AUC (Metoda - RAW)", fontsize=13, fontweight="bold", labelpad=10)
     plt.tight_layout()
     plt.savefig(out_dir / "heatmapa_delta_auc_model_vs_metoda.png", dpi=300, bbox_inches="tight")
     plt.close()
@@ -289,7 +303,7 @@ def generate_delta_auc_heatmaps():
         aggfunc="mean"
     ).reindex(sorted(merged["PoziomUszkodzen"].unique(), key=lambda s: int(s.replace("%", ""))))[methods_clean]
 
-    plt.figure(figsize=(10, 4.5))
+    fig, ax = plt.subplots(figsize=(12, 5.8), dpi=300)
     vmax_l = max(abs(piv_lvl.min().min()), abs(piv_lvl.max().max()), 0.05)
     sns.heatmap(
         piv_lvl,
@@ -299,13 +313,19 @@ def generate_delta_auc_heatmaps():
         center=0,
         vmin=-vmax_l,
         vmax=vmax_l,
+        annot_kws={"fontsize": 15.5, "fontweight": "bold"},
         cbar_kws={"label": "Średni zysk Δ AUC (Metoda - RAW)"},
-        linewidths=1,
-        linecolor="white"
+        linewidths=1.5,
+        linecolor="white",
+        ax=ax
     )
-    plt.title("Średni zysk Δ AUC w zależności od stopnia degradacji danych", fontsize=13, fontweight="bold", pad=12)
-    plt.xlabel("Metoda naprawy danych", fontsize=11, fontweight="bold")
-    plt.ylabel("Poziom uszkodzeń", fontsize=11, fontweight="bold")
+    ax.set_title("Średni zysk Δ AUC w zależności od stopnia degradacji danych", fontsize=16, fontweight="bold", pad=16)
+    ax.set_xlabel("Metoda naprawy danych", fontsize=14, fontweight="bold", labelpad=12)
+    ax.set_ylabel("Poziom uszkodzeń", fontsize=12, fontweight="bold", labelpad=12)
+    ax.tick_params(axis="both", which="major", labelsize=13)
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=12)
+    cbar.set_label("Średni zysk Δ AUC (Metoda - RAW)", fontsize=13, fontweight="bold", labelpad=10)
     plt.tight_layout()
     plt.savefig(out_dir / "heatmapa_delta_auc_poziom_uszkodzen.png", dpi=300, bbox_inches="tight")
     plt.close()
@@ -489,36 +509,54 @@ def generate_knn_vs_median_tradeoff():
     comp_all = pd.merge(df_all, df_all_knn, on=["Dataset", "PoziomUszkodzen", "Model"])
     comp_all["Diff_KNN_minus_Median"] = comp_all["AUC_all_knn"] - comp_all["AUC_all"]
 
-    # Wykres 1: Różnica per zbiór i model (słupkowy)
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5), sharey=True)
-
-    # Subplot 1: Sama imputacja (fill_knn vs fill)
+    # Wykres 1: Różnica per zbiór i model (słupkowy w układzie 2x1 góra-dół)
     mean_diff_fill = comp_fill.groupby("Dataset")["Diff_KNN_minus_Median"].mean().reset_index()
-    colors1 = ["#2ca02c" if val >= 0 else "#d62728" for val in mean_diff_fill["Diff_KNN_minus_Median"]]
-    bars1 = ax1.bar(mean_diff_fill["Dataset"], mean_diff_fill["Diff_KNN_minus_Median"], color=colors1, alpha=0.85, edgecolor="#333333")
-    ax1.axhline(0, color="black", linestyle="--", linewidth=1.2)
-    ax1.set_title("Sama imputacja: fill_knn vs fill (Mediana)", fontsize=12, fontweight="bold", pad=8)
-    ax1.set_ylabel("Różnica Δ AUC (KNN - Mediana)", fontsize=11, fontweight="bold")
-    ax1.set_xlabel("Zbiór danych", fontsize=11, fontweight="bold")
+    mean_diff_fill["Dataset_cap"] = mean_diff_fill["Dataset"].str.capitalize()
+
+    mean_diff_all = comp_all.groupby("Dataset")["Diff_KNN_minus_Median"].mean().reset_index()
+    mean_diff_all["Dataset_cap"] = mean_diff_all["Dataset"].str.capitalize()
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11.5, 10.2), dpi=300, sharex=True)
+
+    # Subplot 1 (Góra): Sama imputacja (fill_knn vs fill)
+    colors1 = ["#2ca02c" if val >= 0 else "#d95f02" for val in mean_diff_fill["Diff_KNN_minus_Median"]]
+    bars1 = ax1.bar(mean_diff_fill["Dataset_cap"], mean_diff_fill["Diff_KNN_minus_Median"], color=colors1, width=0.55, edgecolor="#111111", linewidth=1.5)
+    ax1.axhline(0, color="black", linestyle="--", linewidth=1.5)
+    ax1.set_title("(a) Sama imputacja braków danych: fill_knn vs fill (Mediana)", fontsize=16.5, fontweight="bold", pad=14)
+    ax1.set_ylabel("Różnica Δ AUC (KNN − Mediana)", fontsize=14.5, fontweight="bold", labelpad=10)
+    ax1.grid(True, linestyle=":", alpha=0.6)
+    min_y1 = min(mean_diff_fill["Diff_KNN_minus_Median"].min(), -0.010) * 1.50
+    max_y1 = max(mean_diff_fill["Diff_KNN_minus_Median"].max(), 0.002) + 0.0035
+    ax1.set_ylim(min_y1, max_y1)
+    ax1.tick_params(axis="both", which="major", labelsize=14)
+
     for bar in bars1:
         h = bar.get_height()
         va = "bottom" if h >= 0 else "top"
-        ax1.text(bar.get_x() + bar.get_width() / 2, h + (0.001 if h >= 0 else -0.003), f"{h:+.3f}", ha="center", va=va, fontsize=9.5, fontweight="bold")
+        y_text = h + (0.0006 if h >= 0 else -0.0009)
+        ax1.text(bar.get_x() + bar.get_width() / 2, y_text, f"{h:+.4f}", ha="center", va=va, fontsize=15.0, fontweight="bold")
 
-    # Subplot 2: Pełny pipeline (all_knn vs all)
-    mean_diff_all = comp_all.groupby("Dataset")["Diff_KNN_minus_Median"].mean().reset_index()
-    colors2 = ["#2ca02c" if val >= 0 else "#d62728" for val in mean_diff_all["Diff_KNN_minus_Median"]]
-    bars2 = ax2.bar(mean_diff_all["Dataset"], mean_diff_all["Diff_KNN_minus_Median"], color=colors2, alpha=0.85, edgecolor="#333333")
-    ax2.axhline(0, color="black", linestyle="--", linewidth=1.2)
-    ax2.set_title("Kompleksowy pipeline: all_knn vs all (Mediana)", fontsize=12, fontweight="bold", pad=8)
-    ax2.set_xlabel("Zbiór danych", fontsize=11, fontweight="bold")
+    # Subplot 2 (Dół): Pełny pipeline (all_knn vs all)
+    colors2 = ["#2ca02c" if val >= 0 else "#d95f02" for val in mean_diff_all["Diff_KNN_minus_Median"]]
+    bars2 = ax2.bar(mean_diff_all["Dataset_cap"], mean_diff_all["Diff_KNN_minus_Median"], color=colors2, width=0.55, edgecolor="#111111", linewidth=1.5)
+    ax2.axhline(0, color="black", linestyle="--", linewidth=1.5)
+    ax2.set_title("(b) Pełny potok czyszczący: all_knn vs all (Mediana)", fontsize=16.5, fontweight="bold", pad=14)
+    ax2.set_ylabel("Różnica Δ AUC (KNN − Mediana)", fontsize=14.5, fontweight="bold", labelpad=10)
+    ax2.set_xlabel("Zbiór danych", fontsize=15.5, fontweight="bold", labelpad=12)
+    ax2.grid(True, linestyle=":", alpha=0.6)
+    min_y2 = min(mean_diff_all["Diff_KNN_minus_Median"].min(), -0.012) * 1.50
+    max_y2 = max(mean_diff_all["Diff_KNN_minus_Median"].max(), 0.002) + 0.0035
+    ax2.set_ylim(min_y2, max_y2)
+    ax2.tick_params(axis="both", which="major", labelsize=14)
+
     for bar in bars2:
         h = bar.get_height()
         va = "bottom" if h >= 0 else "top"
-        ax2.text(bar.get_x() + bar.get_width() / 2, h + (0.001 if h >= 0 else -0.003), f"{h:+.3f}", ha="center", va=va, fontsize=9.5, fontweight="bold")
+        y_text = h + (0.0006 if h >= 0 else -0.0009)
+        ax2.text(bar.get_x() + bar.get_width() / 2, y_text, f"{h:+.4f}", ha="center", va=va, fontsize=15.0, fontweight="bold")
 
-    fig.suptitle("Analiza zysku z zaawansowanej imputacji KNN względem prostej mediany", fontsize=14, fontweight="bold", y=0.98)
-    plt.tight_layout(rect=[0, 0.02, 1, 0.95])
+    fig.suptitle("Bezpośrednie porównanie skuteczności algorytmu KNN względem mediany", fontsize=18.0, fontweight="bold", y=0.99)
+    plt.tight_layout(rect=[0, 0.02, 1, 0.97])
     plt.savefig(out_dir / "pojedynek_mediana_vs_knn.png", dpi=300, bbox_inches="tight")
     plt.close()
 

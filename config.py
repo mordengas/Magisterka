@@ -47,7 +47,7 @@ DATASETS_ALL = [
             "Opoznienie_Rozpoznia",
             "Paczkolata",
             "Liczba_Zajetych_Narzadow",
-            "Liczba_Zaostrzen ",
+            "Liczba_Zaostrzen",
             "Czas_Pierwsze_Zaostrzenie",
             "Kreatynina",
             "Max_CRP",
