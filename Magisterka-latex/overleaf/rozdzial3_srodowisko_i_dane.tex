@@ -5,11 +5,11 @@ Rozdział~ten poświęcony jest elementom definiującym środowisko programistyc
 \section{Wykorzystane narzędzia i~biblioteki}
 Całość prac badawczo-implementacyjnych zrealizowano w~języku programowania \textbf{Python} (wersja 3.10+), stanowiącym obecnie dominujący standard w~inżynierii danych i~uczeniu maszynowym \cite{Walker2021}. W~projekcie wykorzystano wyspecjalizowany zestaw bibliotek open-source:
 \begin{itemize}
-    \item \textbf{Pandas} \cite{McKinney2010} (wersja 2.x) – wykorzystywana do profilowania danych, identyfikacji brakujących pól, konwersji typów zmiennych oraz operacji tabelarycznych,
-    \item \textbf{NumPy} \cite{Harris2020} – zapewniająca wydajne operacje macierzowe oraz funkcje losowania pseudolosowego z~użyciem generatora \texttt{default\_rng},
-    \item \textbf{scikit-learn} \cite{Pedregosa2011} – główny szkielet eksperymentalny; posłużyła do implementacji klasyfikatorów (\texttt{GaussianNB}, \texttt{MLPClassifier}, \texttt{RandomForestClassifier}), procedur podziału stratyfikowanego (\texttt{StratifiedKFold}), transformatorów czyszczących (\texttt{SimpleImputer}, \texttt{KNNImputer}, \texttt{StandardScaler}, \texttt{OneHotEncoder}) oraz obiektów potokowych (\texttt{Pipeline}, \texttt{ColumnTransformer}),
-    \item \textbf{XGBoost} \cite{ChenGuestrin2016} – wysoce zoptymalizowana implementacja algorytmu Extreme Gradient Boosting zintegrowana ze standardem interfejsu \texttt{scikit-learn},
-    \item \textbf{Joblib} – biblioteka służąca do zrównoleglenia powtarzanych procedur walidacji krzyżowej na wielordzeniowych jednostkach obliczeniowych CPU,
+    \item \textbf{Pandas} \cite{PandasDocs} (wersja 2.x) – wykorzystywana do profilowania danych, identyfikacji brakujących pól, konwersji typów zmiennych oraz operacji tabelarycznych,
+    \item \textbf{NumPy} \cite{NumpyDocs} – zapewniająca wydajne operacje macierzowe oraz funkcje losowania pseudolosowego z~użyciem generatora \texttt{default\_rng},
+    \item \textbf{scikit-learn} \cite{SklearnDocs} – główny szkielet eksperymentalny; posłużyła do implementacji klasyfikatorów (\texttt{GaussianNB}, \texttt{MLPClassifier}, \texttt{RandomForestClassifier}), procedur podziału stratyfikowanego (\texttt{StratifiedKFold}), transformatorów czyszczących (\texttt{SimpleImputer}, \texttt{KNNImputer}, \texttt{StandardScaler}, \texttt{OneHotEncoder}) oraz obiektów potokowych (\texttt{Pipeline}, \texttt{ColumnTransformer}),
+    \item \textbf{XGBoost} \cite{ChenGuestrin2016,XGBoostDocs} – wysoce zoptymalizowana implementacja algorytmu Extreme Gradient Boosting zintegrowana ze standardem interfejsu \texttt{scikit-learn},
+    \item \textbf{Joblib} \cite{JoblibDocs} – biblioteka służąca do zrównoleglenia powtarzanych procedur walidacji krzyżowej na wielordzeniowych jednostkach obliczeniowych CPU,
     \item \textbf{Matplotlib} \cite{Hunter2007} oraz \textbf{Seaborn} \cite{Waskom2021} – narzędzia graficzne zastosowane do automatycznego generowania krzywych odporności modeli, macierzy korelacji oraz heatmap zysku $\Delta \mathrm{AUC}$.
 \end{itemize}
 
