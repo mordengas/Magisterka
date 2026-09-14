@@ -534,6 +534,40 @@ Zbiór oceny ryzyka kredytowego zawiera liczne cechy kategoryczne i~jest zadanie
 \label{fig:slupkowy_kredyty_30}
 \end{figure}
 
+\section{Teoretyczna interpretacja zróżnicowanej odporności modeli}
+
+Wyniki zaprezentowane na zbiorczych krzywych odporności oraz w~przekroju poszczególnych zbiorów danych uwidaczniają wyraźną asymetrię w~zachowaniu badanych klasyfikatorów. Obserwowane różnice w~stopniu degradacji jakości predykcyjnej nie mają charakteru przypadkowego, lecz wynikają bezpośrednio z~założeń matematycznych oraz specyfiki algorytmów optymalizacji leżących u~podstaw poszczególnych architektur.
+
+\subsection{Modele oparte na drzewach decyzyjnych (Random Forest i~XGBoost)}
+Najwyższą stabilność w~warunkach narastającego zanieczyszczenia danych wykazały algorytmy zespołów drzew decyzyjnych. Ich wysoka odporność wrodzona wynika z~dwóch głównych czynników algorytmicznych:
+\begin{enumerate}
+    \item \textbf{Niezmienniczość reguł podziału węzłów}: Drzewo decyzyjne wyznacza podziały w~oparciu o~nierówności relacyjne ($x_j \le \theta$), minimalizując zanieczyszczenie Giniego lub optymalizując funkcję straty w~ramach rozwinięcia Taylora \cite{ChenGuestrin2016}. W~konsekwencji modele te są niewrażliwe na skale wielkości cech oraz monotoniczne przekształcenia atrybutów. Obecność pojedynczych, skrajnych wartości odstających nie zniekształca kryterium podziału dla pozostałych próbek, lecz powoduje jedynie wyodrębnienie izolowanego liścia.
+    \item \textbf{Dekompozycja błędu w~ramach zespołu}: W~algorytmie Random Forest losowy wybór podzbioru cech w~każdym węźle \cite{Breiman2001} ogranicza prawdopodobieństwo, że zanieczyszczona zmienna sparaliżuje całą strukturę drzewa. Z~kolei w~algorytmie XGBoost wbudowana regularyzacja $L_2$ wag liści ogranicza wrażliwość modelu na obserwacje obarczone szumem.
+\end{enumerate}
+
+\subsection{Perceptron Wielowarstwowy (MLP)}
+W~przeciwieństwie do modeli drzewiastych, sieć MLP na danych surowych (\texttt{raw}) doznaje niemal całkowitego załamania zdolności dyskryminacyjnych ($\mathrm{AUC} \approx 0{,}504$). Wynika to bezpośrednio z~mechanizmu propagacji sygnału i~optymalizacji gradientowej:
+\begin{itemize}
+    \item W~warstwie wejściowej neuronu obliczana jest kombinacja liniowa $\sum w_j x_j + b$. Brak standaryzacji cech o~różnych rzędach wielkości powoduje, że gradient funkcji straty zostaje zdominowany przez zmienne o~największych wartościach liczbowych.
+    \item Prowadzi to do zjawiska niekorzystnego uwarunkowania powierzchni błędu oraz nasycenia nieliniowych funkcji aktywacji, co blokuje przepływ gradientów w~procedurze wstecznej propagacji.
+    \item Dopiero wdrożenie potoku ze standaryzacją $z$-score \cite{Walker2021} sprowadza atrybuty do porównywalnych wariancji, umożliwiając algorytmowi optymalizacji poprawną i~zrównoważoną modyfikację wag, co tłumaczy rekordowy zysk predykcyjny sieci (średnio $+0{,}176$ $\Delta\mathrm{AUC}$).
+\end{itemize}
+
+\subsection{Naiwny Klasyfikator Bayesa (GaussianNB)}
+Model ten okazał się wysoce wrażliwy na obecność wartości odstających, zyskując najwięcej na ich filtracji regułą IQR (strategie \texttt{remove\_fill} oraz \texttt{all}):
+\begin{itemize}
+    \item Klasyfikator zakłada warunkowy rozkład normalny cech, estymując parametry $\mu_{jc}$ oraz $\sigma_{jc}^2$ metodą największej wiarygodności.
+    \item Zgodnie z~teorią statystyki odpornej \cite{Huber1981}, klasyczna wariancja próbkowa charakteryzuje się zerową odpornością na anomalie. Wystąpienie pojedynczego błędu grubego powoduje drastyczne zawyżenie estymatora $\hat{\sigma}^2$.
+    \item Zgodnie ze wzorem gęstości rozkładu normalnego, sztucznie powiększona wariancja w~mianowniku wykładnika prowadzi do silnego spłaszczenia funkcji gęstości prawdopodobieństwa. W~konsekwencji iloczyn prawdopodobieństw warunkowych traci moc dyskryminacyjną, a~klasyfikator nie jest w~stanie skutecznie separować klas decyzyjnych. Zastosowanie procedury eliminacji wartości odstających powyżej progu $3{,}0 \cdot \mathrm{IQR}$ \cite{Tukey1977} zapobiega temu zjawisku.
+\end{itemize}
+
+\subsection{Mechanizmy uzupełniania braków: Mediana a~algorytm $k$-NN}
+Różnice w~efektywności imputacji medianą i~algorytmem \texttt{KNNImputer} znajdują uzasadnienie w~geometrii przestrzeni cech:
+\begin{itemize}
+    \item Algorytm $k$-NN estymuje brakujące wartości na podstawie sąsiadów wyznaczanych odległością euklidesową. W~przypadku danych surowych, zawierających nieodfiltrowane wartości odstające i~nieskalowane kolumny, metryka odległości zostaje zdeformowana przez pojedyncze wymiary, prowadząc do selekcji niewłaściwych obserwacji referencyjnych. Tłumaczy to, dlaczego strategia \texttt{fill\_knn} uzyskała najgorsze wyniki w~rankingu globalnym.
+    \item Mediana próbkowa, jako estymator odporny, jest całkowicie niewrażliwa na skrajne anomalie. Ponadto jej wyznaczenie wymaga minimalnego nakładu obliczeniowego, co przy zbliżonej jakości predykcyjnej czyni ją rozwiązaniem znacznie bardziej efektywnym niż wielowymiarowe przeszukiwanie przestrzeni w~algorytmie $k$-NN.
+\end{itemize}
+
 \section{Analiza zysku z~czyszczenia danych ($\Delta \mathrm{AUC}$)}
 Aby dokonać całościowej syntezy zysków z~poszczególnych strategii czyszczenia danych, wygenerowano zestawienie średniego zysku $\Delta \mathrm{AUC}$ w~przekroju modeli oraz badanych zbiorów danych (Tabela~\ref{tab:delta_auc_summary}). Następnie przeanalizowano rozkłady zysków za pomocą dedykowanych heatmap w~trzech kluczowych płaszczyznach badawczych.
 
